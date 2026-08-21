@@ -58,6 +58,8 @@ services:
       dockerfile: Dockerfile.prod
     restart: unless-stopped
     command: celery -A app.tasks.worker worker --loglevel=info --concurrency=2
+    healthcheck:
+      disable: true
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nyumbalink}
       REDIS_URL: redis://redis:6379/0
