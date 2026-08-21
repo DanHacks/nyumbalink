@@ -21,6 +21,7 @@ from app.models.analytics import (
     OwnerAnalytics, SearchLog,
 )
 from app.models.chat import ChatMessage, ChatConversation
+from app.models.university import University, Campus
 from app.models.notification import Notification, NotificationPreference
 from app.models.trust import (
     PropertyService, PropertyServiceStatus, PropertyRecommendation,

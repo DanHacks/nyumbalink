@@ -223,6 +223,9 @@ class Room(IdMixin, TimestampMixin, ActiveMixin, Base):
     pet_friendly: Mapped[bool] = mapped_column(Boolean, default=False)
     student_friendly: Mapped[bool] = mapped_column(Boolean, default=False)
     family_friendly: Mapped[bool] = mapped_column(Boolean, default=False)
+    gender_restriction: Mapped[str] = mapped_column(
+        String(20), default="any", nullable=True
+    )
 
     last_occupied_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True

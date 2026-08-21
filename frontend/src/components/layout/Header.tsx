@@ -58,7 +58,22 @@ export default function Header() {
 
           <nav className="hidden md:flex items-center space-x-4">
             <Link to="/properties" className="text-sm font-medium hover:text-primary">
-              Browse
+              Find a Home
+            </Link>
+            <Link to="/map" className="text-sm font-medium hover:text-primary">
+              Map
+            </Link>
+            <Link to="/hostels" className="text-sm font-medium hover:text-primary">
+              Hostels
+            </Link>
+            <Link to="/universities" className="text-sm font-medium hover:text-primary">
+              Students
+            </Link>
+            <Link to="/how-it-works" className="text-sm font-medium hover:text-primary">
+              How It Works
+            </Link>
+            <Link to="/safety" className="text-sm font-medium hover:text-primary">
+              Safety
             </Link>
 
             {isAuthenticated && user ? (
@@ -187,7 +202,35 @@ export default function Header() {
               className="block py-2 text-sm font-medium"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Browse Properties
+              Find a Home
+            </Link>
+            <Link
+              to="/map"
+              className="block py-2 text-sm font-medium"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Map
+            </Link>
+            <Link
+              to="/universities"
+              className="block py-2 text-sm font-medium"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Student Accommodation
+            </Link>
+            <Link
+              to="/how-it-works"
+              className="block py-2 text-sm font-medium"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              How It Works
+            </Link>
+            <Link
+              to="/safety"
+              className="block py-2 text-sm font-medium"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Safety
             </Link>
 
             {isAuthenticated ? (

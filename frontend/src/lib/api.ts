@@ -118,6 +118,46 @@ export const searchApi = {
   autocomplete: (q: string) => api.get('/search/autocomplete', { params: { q } }),
 };
 
+export interface MapRoom {
+  id: string;
+  room_number?: string;
+  house_type?: string;
+  rent_amount: number;
+  currency?: string;
+  property_id?: string;
+  property_name?: string;
+  city?: string | null;
+  county?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  distance_km?: number | null;
+  student_friendly?: boolean;
+  internet_available?: boolean;
+  water_available?: boolean;
+}
+
+export interface Booking {
+  id: string;
+  property_id: string;
+  room_id?: string | null;
+  status: string;
+  scheduled_date: string;
+  scheduled_time_start: string;
+  scheduled_time_end: string;
+  created_at: string;
+  tenant_name?: string | null;
+  property_name?: string | null;
+  house_type?: string | null;
+  tenant_notes?: string | null;
+  owner_notes?: string | null;
+}
+
+export const favoritesApi = {
+  list: (params?: any) => api.get('/favorites', { params }),
+  add: (propertyId: string) => api.post(`/favorites/${propertyId}`),
+  remove: (propertyId: string) => api.delete(`/favorites/${propertyId}`),
+};
+
 export const analyticsApi = {
   getPropertyAnalytics: (propertyId: string, params?: any) =>
     api.get(`/analytics/property/${propertyId}`, { params }),
@@ -152,4 +192,32 @@ export const paymentsApi = {
     api.post('/payments/mpesa/stk-push', { amount, phone, payment_type: paymentType }),
   subscribePremium: (planType: string, amount: number) =>
     api.post('/payments/premium/subscribe', { plan_type: planType, amount }),
+};
+
+export const chatApi = {
+  listConversations: (params?: any) => api.get('/chat/conversations', { params }),
+  startConversation: (data: { property_id?: string; user_id?: string }) =>
+    api.post('/chat/conversations', data),
+  getMessages: (conversationId: string, params?: any) =>
+    api.get(`/chat/conversations/${conversationId}/messages`, { params }),
+  sendMessage: (conversationId: string, data: { content?: string; media_url?: string; message_type?: string }) =>
+    api.post(`/chat/conversations/${conversationId}/messages`, data),
+};
+
+export const notificationsApi = {
+  list: (params?: any) => api.get('/notifications', { params }),
+  markRead: (id: string) => api.post(`/notifications/${id}/read`),
+  markAllRead: () => api.post('/notifications/read-all'),
+  getPreferences: () => api.get('/notifications/preferences'),
+  updatePreferences: (data: any) => api.put('/notifications/preferences', data),
+};
+
+export const universitiesApi = {
+  list: (q?: string) => api.get('/universities', { params: q ? { q } : undefined }),
+  get: (id: string) => api.get(`/universities/${id}`),
+  nearbyAccommodation: (campusId: string, params?: any) =>
+    api.get(`/universities/campuses/${campusId}/nearby-accommodation`, { params }),
+  createUniversity: (data: any) => api.post('/universities', data),
+  createCampus: (universityId: string, data: any) =>
+    api.post(`/universities/${universityId}/campuses`, data),
 };

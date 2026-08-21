@@ -7,7 +7,7 @@ from app.core.database import init_db, close_db
 from app.api.v1 import (
     auth, properties, rooms, bookings, verification, reviews, search, maps,
     analytics, ads, payments, admin, ai, reports, media, favorites,
-    notifications, services,
+    notifications, services, chat, universities,
 )
 
 
@@ -54,6 +54,8 @@ app.include_router(media.router, prefix=f"{settings.API_V1_PREFIX}/media", tags=
 app.include_router(favorites.router, prefix=f"{settings.API_V1_PREFIX}/favorites", tags=["Favorites"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_PREFIX}/notifications", tags=["Notifications"])
 app.include_router(services.router, prefix=f"{settings.API_V1_PREFIX}/services", tags=["Services"])
+app.include_router(chat.router, prefix=f"{settings.API_V1_PREFIX}/chat", tags=["Chat"])
+app.include_router(universities.router, prefix=f"{settings.API_V1_PREFIX}/universities", tags=["Universities"])
 
 
 @app.get("/health")
