@@ -1,41 +1,59 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
 .DS_Store
-*.pem
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
 
-# local env files
-.env*.local
+# IntelliJ
+*.iml
+*.ipr
+*.iws
+*.tmproj
+*.swp
+.idea/
 
-# typescript
-*.tsbuildinfo
+# Android Studio
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
 
-# generated native folders
-/ios
-/android
+# Flutter / Dart / Pub
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/doc/api/
+.pub-cache/
+build/
+**/android/**/gradle-wrapper.jar
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.keystore
+**/ios/Runner/GeneratedPluginRegistrant.swift
+**/android/**/BuildConfig.java
+.flutter-plugins
+# Symbols
+**/android/app/debug/output-metadata.json
+**/android/app/profile/output-metadata.json
+**/android/app/release/output-metadata.json
+
+# Obfuscation related
+app.*.map.json
+
+# Exceptions
+!/packages/flutter_tools/test/data/dart_dependencies_test/**/*.dart
+!/dev/**/*.S
+!/examples/layers/**/*.dart
+!/examples/layers/**/*.png

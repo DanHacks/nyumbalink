@@ -88,26 +88,25 @@ function DashboardRouter() {
   return <TenantDashboardPage />;
 }
 
-/** Public pages shared by desktop and mobile-browser layouts. */
-function PublicRoutes() {
-  return (
-    <>
-      <Route path="how-it-works" element={<HowItWorksPage />} />
-      <Route path="about" element={<AboutPage />} />
-      <Route path="safety" element={<SafetyPage />} />
-      <Route path="help" element={<HelpPage />} />
-      <Route path="contact" element={<ContactPage />} />
-      <Route path="pricing" element={<PricingPage />} />
-      <Route path="privacy" element={<PrivacyPage />} />
-      <Route path="terms" element={<TermsPage />} />
-      <Route path="universities" element={<UniversitiesPage />} />
-      <Route path="universities/:slug" element={<UniversityDetailPage />} />
-      {['hostels', 'apartments', 'houses', 'bedsitters', 'rooms', 'guest-houses', 'airbnb', 'commercial', 'land'].map(
-        (slug) => <Route key={slug} path={slug} element={<CategoryPage slug={slug} />} />
-      )}
-    </>
-  );
-}
+/** Public pages shared by desktop and mobile-browser layouts. Returned as a
+ *  React.Fragment so React Router can flatten it inside <Routes>. */
+const PublicRoutes = (
+  <>
+    <Route path="how-it-works" element={<HowItWorksPage />} />
+    <Route path="about" element={<AboutPage />} />
+    <Route path="safety" element={<SafetyPage />} />
+    <Route path="help" element={<HelpPage />} />
+    <Route path="contact" element={<ContactPage />} />
+    <Route path="pricing" element={<PricingPage />} />
+    <Route path="privacy" element={<PrivacyPage />} />
+    <Route path="terms" element={<TermsPage />} />
+    <Route path="universities" element={<UniversitiesPage />} />
+    <Route path="universities/:slug" element={<UniversityDetailPage />} />
+    {['hostels', 'apartments', 'houses', 'bedsitters', 'rooms', 'guest-houses', 'airbnb', 'commercial', 'land'].map(
+      (slug) => <Route key={slug} path={slug} element={<CategoryPage slug={slug} />} />
+    )}
+  </>
+);
 
 export default function App() {
   const initialize = useAuthStore((state) => state.initialize);
@@ -123,7 +122,7 @@ export default function App() {
         {/* Public website pages are identical on every screen size */}
         <Route element={<WebLayout />}>
           <Route path="/" element={<WebHomePage />} />
-          <PublicRoutes />
+          {PublicRoutes}
         </Route>
 
         <Route path="/map" element={<MapHomePage />} />
@@ -151,7 +150,7 @@ export default function App() {
       <Route path="/map" element={<MapHomePage />} />
       <Route path="/" element={<WebLayout />}>
         <Route index element={<WebHomePage />} />
-        <PublicRoutes />
+        {PublicRoutes}
         <Route path="explore" element={<ExplorePage />} />
         <Route path="saved" element={<SavedPage />} />
         <Route path="viewings" element={<ViewingsPage />} />
