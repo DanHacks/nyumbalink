@@ -1,0 +1,14 @@
+{
+  "name": "nyumbalink",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev -- --host 0.0.0.0 --port 8080",
+    "dev:api": "cd backend && python run.py",
+    "dev:web": "cd frontend && npm run dev -- --host 0.0.0.0 --port 5173",
+    "build": "cd frontend && npm run build",
+    "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
