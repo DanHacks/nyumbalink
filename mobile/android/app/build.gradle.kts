@@ -18,7 +18,7 @@ android {
     defaultConfig {
         applicationId = "com.nyumbalink.nyumbalink_mobile"
         // API 21 keeps the app installable on affordable Kenyan Android devices (spec #60).
-        minSdk = 21
+        minSdk = flutter.minSdkVersion
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
