@@ -157,7 +157,9 @@ export default function App() {
           {PublicRoutes}
         </Route>
 
-        <Route path="/map" element={<MapHomePage />} />
+        <Route path="/map" element={<WebLayout />}>
+          <Route index element={<MapHomePage />} />
+        </Route>
         <Route element={<MobileShell />}>
           <Route path="search" element={<MobileSearchPage />} />
           <Route path="explore" element={<MobileSearchPage />} />
@@ -185,7 +187,9 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/map" element={<MapHomePage />} />
+      <Route path="/map" element={<WebLayout />}>
+        <Route index element={<MapHomePage />} />
+      </Route>
       <Route path="/" element={<WebLayout />}>
         <Route index element={<WebHomePage />} />
         {PublicRoutes}

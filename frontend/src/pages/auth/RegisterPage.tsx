@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore, homeRouteFor } from '@/store/authStore';
-import { googleClientId, ensureGoogle } from '@/lib/googleAuth';
 import toast from 'react-hot-toast';
 
 const ROLE_OPTIONS = [
@@ -44,46 +43,10 @@ export default function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const googleEnabled = !!googleClientId();
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-
   const goHome = () => {
     const role = useAuthStore.getState().user?.role;
     navigate(homeRouteFor(role));
   };
-
-  useEffect(() => {
-    if (!googleEnabled || !googleBtnRef.current) return;
-    let active = true;
-    ensureGoogle()
-      .then((g) => {
-        if (!active || !googleBtnRef.current) return;
-        g.accounts.id.initialize({
-          client_id: googleClientId(),
-          callback: async (response: any) => {
-            if (!response?.credential) return;
-            try {
-              setIsLoading(true);
-              await useAuthStore.getState().googleLogin(response.credential);
-              toast.success('Account created!');
-              goHome();
-            } catch (error: any) {
-              toast.error(error.response?.data?.detail || 'Google sign-in failed');
-              setIsLoading(false);
-            }
-          },
-        });
-        g.accounts.id.renderButton(googleBtnRef.current, {
-          theme: 'outline',
-          size: 'large',
-          width: googleBtnRef.current.offsetWidth || 320,
-        });
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [googleEnabled]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -233,10 +196,6 @@ export default function RegisterPage() {
             {isLoading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
-
-        {googleEnabled && (
-          <div className="flex justify-center" ref={googleBtnRef}></div>
-        )}
 
         <p className="text-center text-sm text-gray-600">
           <button

@@ -227,7 +227,7 @@ export default function MapHomePage() {
   const isRotated = Math.abs(bearing % 360) > 0.5;
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-slate-100">
+    <div className="relative h-[calc(100dvh-4rem)] w-full overflow-hidden bg-slate-100">
       <div className="absolute inset-0">
         <MapCanvas
           properties={listed}

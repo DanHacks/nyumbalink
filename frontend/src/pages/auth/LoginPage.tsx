@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore, homeRouteFor } from '@/store/authStore';
-import { googleClientId, ensureGoogle } from '@/lib/googleAuth';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
@@ -13,48 +12,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const googleEnabled = !!googleClientId();
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-
   const goHome = () => {
     const role = useAuthStore.getState().user?.role;
     navigate(homeRouteFor(role));
   };
-
-  useEffect(() => {
-    if (!googleEnabled || !googleBtnRef.current) return;
-    let active = true;
-    ensureGoogle()
-      .then((g) => {
-        if (!active || !googleBtnRef.current) return;
-        g.accounts.id.initialize({
-          client_id: googleClientId(),
-          callback: async (response: any) => {
-            if (!response?.credential) return;
-            try {
-              setIsLoading(true);
-              await useAuthStore.getState().googleLogin(response.credential);
-              toast.success('Welcome back!');
-              goHome();
-            } catch (error: any) {
-              toast.error(error.response?.data?.detail || 'Google sign-in failed');
-              setIsLoading(false);
-            }
-          },
-        });
-        g.accounts.id.renderButton(googleBtnRef.current, {
-          theme: 'outline',
-          size: 'large',
-          width: googleBtnRef.current.offsetWidth || 320,
-        });
-      })
-      .catch(() => {
-        /* Google unavailable; button stays hidden */
-      });
-    return () => {
-      active = false;
-    };
-  }, [googleEnabled]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,10 +90,6 @@ export default function LoginPage() {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        {googleEnabled && (
-          <div className="flex justify-center" ref={googleBtnRef}></div>
-        )}
 
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
