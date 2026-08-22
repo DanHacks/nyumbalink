@@ -31,7 +31,7 @@ export default function WebHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6">
         <Link to="/" className="flex shrink-0 items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-teal-700 text-sm font-black text-white">NL</span>
+          <img src="/logo.png" alt="NyumbaLink" className="h-9 w-9 rounded-lg object-contain" />
           <span className="text-lg font-bold tracking-tight text-slate-900">NyumbaLink</span>
         </Link>
 

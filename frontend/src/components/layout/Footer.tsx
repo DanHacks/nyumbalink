@@ -6,7 +6,10 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-lg font-bold mb-4">NyumbaLink</h3>
+            <Link to="/" className="flex items-center gap-2 mb-4">
+              <img src="/logo.png" alt="NyumbaLink" className="h-9 w-9 rounded-lg object-contain" />
+              <h3 className="text-lg font-bold">NyumbaLink</h3>
+            </Link>
             <p className="text-sm text-gray-600">
               Find Verified Homes. Move with Confidence.
             </p>

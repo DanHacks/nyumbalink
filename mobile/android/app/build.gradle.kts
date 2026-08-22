@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -7,7 +10,7 @@ plugins {
 android {
     namespace = "com.nyumbalink.nyumbalink_mobile"
     // We installed Android platform / build-tools 34 on the build machine.
-    compileSdk = 34
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -19,7 +22,7 @@ android {
         applicationId = "com.nyumbalink.nyumbalink_mobile"
         // API 21 keeps the app installable on affordable Kenyan Android devices (spec #60).
         minSdk = flutter.minSdkVersion
-        targetSdk = 34
+        targetSdk = 37
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -29,8 +32,8 @@ android {
         create("release") {
             val keystorePropsFile = rootProject.file("key.properties")
             if (keystorePropsFile.exists()) {
-                val keystoreProps = java.util.Properties()
-                keystoreProps.load(java.io.FileInputStream(keystorePropsFile))
+                val keystoreProps = Properties()
+                keystoreProps.load(FileInputStream(keystorePropsFile))
                 storeFile = file(keystoreProps["storeFile"] as String)
                 storePassword = keystoreProps["storePassword"] as String
                 keyAlias = keystoreProps["keyAlias"] as String
