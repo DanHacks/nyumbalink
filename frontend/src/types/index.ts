@@ -4,7 +4,7 @@ export interface User {
   phone?: string;
   first_name: string;
   last_name: string;
-  role: 'tenant' | 'owner' | 'caretaker' | 'manager' | 'host' | 'agent' | 'admin' | 'moderator' | 'verification_officer' | 'superadmin';
+  role: 'student' | 'tenant' | 'owner' | 'caretaker' | 'manager' | 'host' | 'agent' | 'admin' | 'moderator' | 'verification_officer' | 'superadmin' | null;
   is_email_verified: boolean;
   is_phone_verified: boolean;
   is_verified_owner: boolean;

@@ -78,7 +78,7 @@ export default function Header() {
 
             {isAuthenticated && user ? (
               <>
-                {['owner', 'caretaker', 'agent', 'host', 'manager'].includes(user.role) && (
+                {user.role && ['owner', 'caretaker', 'agent', 'host', 'manager'].includes(user.role) && (
                   <Link
                     to="/properties/create"
                     className="text-sm font-medium bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90"
@@ -87,7 +87,7 @@ export default function Header() {
                   </Link>
                 )}
 
-                {['admin', 'superadmin', 'moderator', 'verification_officer'].includes(user.role) && (
+                {user.role && ['admin', 'superadmin', 'moderator', 'verification_officer'].includes(user.role) && (
                   <Link to="/admin" className="text-sm font-medium hover:text-primary">
                     <Shield className="h-5 w-5" />
                   </Link>

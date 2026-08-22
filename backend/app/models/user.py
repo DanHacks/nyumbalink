@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import (
     Column, String, Boolean, Text, DateTime, Float, Enum as SAEnum,
     ForeignKey, JSON, Integer
@@ -10,6 +12,7 @@ import enum
 
 
 class UserRole(str, enum.Enum):
+    STUDENT = "student"
     TENANT = "tenant"
     OWNER = "owner"
     CARETAKER = "caretaker"
@@ -33,8 +36,13 @@ class User(IdMixin, TimestampMixin, ActiveMixin, Base):
     other_names: Mapped[str] = mapped_column(String(200), nullable=True)
 
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=True)
-    role: Mapped[UserRole] = mapped_column(
-        SAEnum(UserRole), default=UserRole.TENANT, nullable=False
+    # Role is intentionally nullable: users who sign up via Google (or another
+    # federated provider) start with no role and MUST complete role selection
+    # before they can use role-restricted features. Self-service registration
+    # only permits student/tenant/owner/agent; caretaker/manager/host/admin/
+    # moderator/verification_officer/superadmin are assigned by other flows.
+    role: Mapped[Optional[UserRole]] = mapped_column(
+        SAEnum(UserRole), nullable=True
     )
 
     is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -18,6 +18,7 @@ from app.models.trust import OTPCode
 from app.schemas.auth import (
     RegisterRequest, LoginRequest, TokenResponse, RefreshTokenRequest,
     UserResponse, OTPRequest, OTPVerifyRequest, GoogleLoginRequest,
+    SelectRoleRequest, SELF_SERVICE_ROLES,
 )
 
 router = APIRouter()
@@ -28,7 +29,7 @@ OTP_MAX_ATTEMPTS = 5
 
 async def _issue_tokens(db: AsyncSession, user: User, session_label: str = "login"):
     access_token = create_access_token(
-        data={"sub": user.id, "role": user.role.value},
+        data={"sub": user.id, "role": user.role.value if user.role else "unset"},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     refresh_token = create_refresh_token(data={"sub": user.id})
@@ -257,6 +258,26 @@ async def google_login(
         await db.flush()
 
     return await _issue_tokens(db, user, "google")
+
+
+@router.post("/select-role", response_model=UserResponse)
+async def select_role(
+    request: SelectRoleRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Set the role for an account that has not yet chosen one (e.g. a user
+    who signed up with Google). Caretaker/admin/etc. roles are assigned by
+    other flows and cannot be self-selected."""
+    if current_user.role is not None and current_user.role.value != request.role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account role is already set. Contact support to change it.",
+        )
+
+    current_user.role = UserRole(request.role)
+    await db.flush()
+    return current_user
 
 
 @router.post("/refresh", response_model=TokenResponse)

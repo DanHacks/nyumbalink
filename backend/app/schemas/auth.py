@@ -3,6 +3,11 @@ from typing import Optional, List
 from datetime import datetime
 
 
+# Roles a user may create for themselves during registration. Caretaker,
+# manager, host, admin, moderator and verification_officer are NOT self-service.
+SELF_SERVICE_ROLES = {"student", "tenant", "owner", "agent"}
+
+
 class RegisterRequest(BaseModel):
     email: str = Field(..., max_length=255)
     phone: str = Field(..., max_length=20)
@@ -23,6 +28,26 @@ class RegisterRequest(BaseModel):
         if not cleaned.isdigit() or len(cleaned) < 10:
             raise ValueError("Invalid phone number")
         return f"+{cleaned}"
+
+    @validator("role")
+    def validate_role(cls, v):
+        if v not in SELF_SERVICE_ROLES:
+            raise ValueError(
+                "Invalid account type. Choose Student, Tenant, Property Owner or Estate Agent."
+            )
+        return v
+
+
+class SelectRoleRequest(BaseModel):
+    role: str = Field(..., min_length=1)
+
+    @validator("role")
+    def validate_select_role(cls, v):
+        if v not in SELF_SERVICE_ROLES:
+            raise ValueError(
+                "Invalid account type. Choose Student, Tenant, Property Owner or Estate Agent."
+            )
+        return v
 
 
 class LoginRequest(BaseModel):

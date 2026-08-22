@@ -5,10 +5,37 @@ import { authApi } from '@/lib/api';
 interface AuthStore extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
+  selectRole: (role: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
   setUser: (user: User) => void;
   initialize: () => Promise<void>;
+}
+
+/** Server is the source of truth for the role. Map the authenticated user's
+ *  role to their post-login home route. A null/unset role means the user must
+ *  complete role selection first. */
+export function homeRouteFor(role: string | null | undefined): string {
+  switch (role) {
+    case 'student':
+      return '/student';
+    case 'tenant':
+      return '/tenant';
+    case 'owner':
+      return '/owner';
+    case 'agent':
+      return '/agent';
+    case 'caretaker':
+      return '/caretaker';
+    case 'admin':
+    case 'superadmin':
+    case 'moderator':
+    case 'verification_officer':
+      return '/admin';
+    default:
+      return '/choose-role';
+  }
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -47,6 +74,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       isAuthenticated: true,
     });
 
+    await get().fetchUser();
+  },
+
+  googleLogin: async (idToken: string) => {
+    const response = await authApi.google({ id_token: idToken });
+    const { access_token, refresh_token } = response.data;
+
+    localStorage.setItem('access_token', access_token);
+    localStorage.setItem('refresh_token', refresh_token);
+
+    set({
+      accessToken: access_token,
+      refreshToken: refresh_token,
+      isAuthenticated: true,
+    });
+
+    await get().fetchUser();
+  },
+
+  selectRole: async (role: string) => {
+    await authApi.selectRole({ role });
     await get().fetchUser();
   },
 

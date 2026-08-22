@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, homeRouteFor } from '@/store/authStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import WebLayout from '@/components/layout/WebLayout';
 import MobileShell from '@/components/mobile/MobileShell';
@@ -14,6 +14,8 @@ import HomePage from '@/pages/HomePage';
 import MapHomePage from '@/pages/MapHomePage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
+import ChooseRolePage from '@/pages/auth/ChooseRolePage';
+import StudentDashboardPage from '@/pages/dashboard/StudentDashboardPage';
 import PropertiesPage from '@/pages/properties/PropertiesPage';
 import PropertyDetailPage from '@/pages/properties/PropertyDetailPage';
 import CreatePropertyPage from '@/pages/properties/CreatePropertyPage';
@@ -70,8 +72,34 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user && !['admin', 'superadmin', 'moderator', 'verification_officer'].includes(user.role)) {
-    return <Navigate to="/" replace />;
+  if (user && !['admin', 'superadmin', 'moderator', 'verification_officer'].includes(user.role ?? '')) {
+    return <Navigate to={homeRouteFor(user.role)} replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/** Guards a route to a specific set of roles. A user with no role (e.g. just
+ *  signed up with Google) is sent to role selection. `__none__` matches a
+ *  null role so the choose-role page is reachable. */
+function RoleRoute({ allow, children }: { allow: string[]; children: React.ReactNode }) {
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const key = user?.role ?? '__none__';
+  if (!allow.includes(key)) {
+    return <Navigate to={homeRouteFor(user?.role)} replace />;
   }
 
   return <>{children}</>;
@@ -79,10 +107,14 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 const OWNER_ROLES = ['owner', 'caretaker', 'agent', 'host', 'manager'];
 
-/** Role-aware dashboard: tenants get the tenant home, owners get property management. */
+/** Role-aware dashboard: students get the student home, owners get property
+ *  management, everyone else gets the tenant home. */
 function DashboardRouter() {
   const { user } = useAuthStore();
-  if (user && OWNER_ROLES.includes(user.role)) {
+  if (user?.role === 'student') {
+    return <StudentDashboardPage />;
+  }
+  if (user && user.role && OWNER_ROLES.includes(user.role)) {
     return <OwnerDashboardPage />;
   }
   return <TenantDashboardPage />;
@@ -139,6 +171,12 @@ export default function App() {
           <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
           <Route path="dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+          <Route path="student" element={<RoleRoute allow={['student']}><StudentDashboardPage /></RoleRoute>} />
+          <Route path="tenant" element={<RoleRoute allow={['tenant']}><TenantDashboardPage /></RoleRoute>} />
+          <Route path="owner" element={<RoleRoute allow={['owner', 'agent', 'caretaker']}><OwnerDashboardPage /></RoleRoute>} />
+          <Route path="agent" element={<RoleRoute allow={['agent', 'owner', 'caretaker']}><OwnerDashboardPage /></RoleRoute>} />
+          <Route path="caretaker" element={<RoleRoute allow={['caretaker', 'owner', 'agent']}><OwnerDashboardPage /></RoleRoute>} />
+          <Route path="choose-role" element={<RoleRoute allow={['__none__', 'student', 'tenant', 'owner', 'agent']}><ChooseRolePage /></RoleRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
@@ -208,6 +246,54 @@ export default function App() {
             <ProtectedRoute>
               <ProfilePage />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="student"
+          element={
+            <RoleRoute allow={['student']}>
+              <StudentDashboardPage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="tenant"
+          element={
+            <RoleRoute allow={['tenant']}>
+              <TenantDashboardPage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="owner"
+          element={
+            <RoleRoute allow={['owner', 'agent', 'caretaker']}>
+              <OwnerDashboardPage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="agent"
+          element={
+            <RoleRoute allow={['agent', 'owner', 'caretaker']}>
+              <OwnerDashboardPage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="caretaker"
+          element={
+            <RoleRoute allow={['caretaker', 'owner', 'agent']}>
+              <OwnerDashboardPage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="choose-role"
+          element={
+            <RoleRoute allow={['__none__', 'student', 'tenant', 'owner', 'agent']}>
+              <ChooseRolePage />
+            </RoleRoute>
           }
         />
         <Route

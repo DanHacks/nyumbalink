@@ -36,7 +36,7 @@ export default function OwnerDashboardPage() {
     },
   ];
 
-  if (!user || !['owner', 'caretaker', 'agent', 'host', 'manager'].includes(user.role)) {
+  if (!user || !user.role || !['owner', 'caretaker', 'agent', 'host', 'manager'].includes(user.role)) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
         <h2 className="text-2xl font-bold mb-4">Owner Dashboard</h2>
