@@ -312,7 +312,7 @@ async def refresh_token(request: RefreshTokenRequest, db: AsyncSession = Depends
         )
 
     new_access_token = create_access_token(
-        data={"sub": user.id, "role": user.role.value},
+        data={"sub": user.id, "role": user.role.value if user.role else "unset"},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     new_refresh_token = create_refresh_token(data={"sub": user.id})
