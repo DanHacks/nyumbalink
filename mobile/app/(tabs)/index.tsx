@@ -1,289 +1,273 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View, Text, TextInput, Pressable, StyleSheet, FlatList, ActivityIndicator, Dimensions,
-} from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT, Region } from 'react-native-maps';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import MapView, { PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import PropertyCard from '../../src/components/PropertyCard';
-import EmptyState from '../../src/components/EmptyState';
-import { searchApi, type MapRoom } from '../../src/lib/api';
-import { colors } from '../../src/theme';
+import SearchBar from '@/components/SearchBar';
+import PropertyMarker from '@/components/PropertyMarker';
+import PropertyPreviewSheet from '@/components/PropertyPreviewSheet';
+import FilterSheet from '@/components/FilterSheet';
+import { getPropertiesInBounds, geocode } from '@/lib/api';
+import { COLORS } from '@/lib/theme';
+import type { MapProperty, PropertyFilters } from '@/lib/types';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const NAIROBI = { latitude: -1.2864, longitude: 36.8172 };
+const DEFAULT_REGION: Region = {
+  latitude: -1.2921,
+  longitude: 36.8219,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
+};
 
-export default function MapHome() {
+function regionToBounds(r: Region) {
+  return {
+    north: r.latitude + r.latitudeDelta / 2,
+    south: r.latitude - r.latitudeDelta / 2,
+    east: r.longitude + r.longitudeDelta / 2,
+    west: r.longitude - r.longitudeDelta / 2,
+    zoom: Math.round(12 - r.latitudeDelta * 100),
+  };
+}
+
+function filtersToParams(f: PropertyFilters) {
+  const p: Record<string, any> = {};
+  if (f.price_max != null) p.price_max = f.price_max;
+  if (f.price_min != null) p.price_min = f.price_min;
+  if (f.property_type) p.property_type = f.property_type;
+  if (f.rooms != null) p.rooms = f.rooms;
+  if (f.verified_only) p.verified_only = true;
+  if (f.student) p.student = true;
+  if (f.gender) p.gender = f.gender;
+  if (f.furnished) p.furnished = true;
+  if (f.wifi) p.wifi = true;
+  if (f.water) p.water = true;
+  if (f.parking) p.parking = true;
+  if (f.security) p.security = true;
+  return p;
+}
+
+export default function HomeScreen() {
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
-  const [region, setRegion] = useState<Region>({
-    ...NAIROBI,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-  });
-  const [rooms, setRooms] = useState<MapRoom[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [locating, setLocating] = useState(false);
-  const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadProperties = useCallback(async (lat?: number, lon?: number, q?: string) => {
-    setLoading(true);
-    try {
-      const params: Record<string, unknown> = { radius_km: 5 };
-      if (lat != null && lon != null) {
-        params.lat = lat;
-        params.lon = lon;
+  const [region, setRegion] = useState<Region>(DEFAULT_REGION);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [properties, setProperties] = useState<MapProperty[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selected, setSelected] = useState<MapProperty | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<PropertyFilters>({});
+  const [query, setQuery] = useState('');
+
+  const loadBounds = useCallback(
+    async (r: Region) => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await getPropertiesInBounds(regionToBounds(r), filtersToParams(filters));
+        setProperties(data as MapProperty[]);
+      } catch {
+        setError('Could not load properties. Check your connection.');
+      } finally {
+        setLoading(false);
       }
-      if (q) params.q = q;
-      const response = await searchApi.smart(params);
-      setRooms(response.data.results ?? []);
-    } catch {
-      setRooms([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [filters],
+  );
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         try {
-          const pos = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          const userRegion = {
+          const pos = await Location.getCurrentPositionAsync({});
+          const loc = {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
           };
-          setRegion(userRegion);
-          mapRef.current?.animateToRegion(userRegion, 500);
-          await loadProperties(pos.coords.latitude, pos.coords.longitude);
+          setUserLocation(loc);
+          const r: Region = { ...loc, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+          setRegion(r);
+          mapRef.current?.animateToRegion(r, 500);
+          loadBounds(r);
           return;
         } catch {
-          // fall through to default
+          /* fall through to default */
         }
       }
-      await loadProperties();
+      loadBounds(DEFAULT_REGION);
     })();
-  }, [loadProperties]);
+  }, []);
 
-  const recenter = async () => {
-    setLocating(true);
+  const onRegionChangeComplete = (r: Region) => {
+    setRegion(r);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => loadBounds(r), 600);
+  };
+
+  const runSearch = async () => {
+    if (!query.trim()) return;
     try {
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const r = {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      };
-      mapRef.current?.animateToRegion(r, 500);
-      await loadProperties(pos.coords.latitude, pos.coords.longitude, query || undefined);
+      const res = await geocode(query.trim());
+      if (res) {
+        const r: Region = {
+          latitude: res.lat,
+          longitude: res.lng,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        };
+        setRegion(r);
+        mapRef.current?.animateToRegion(r, 600);
+        loadBounds(r);
+      }
     } catch {
-      // keep current view
-    } finally {
-      setLocating(false);
+      setError('Location not found.');
     }
   };
 
-  const submitSearch = () => {
-    loadProperties(region.latitude, region.longitude, query.trim() || undefined);
+  const applyFilters = (next: PropertyFilters) => {
+    setFilters(next);
+    setShowFilters(false);
+    loadBounds(region);
   };
 
-  const markers = useMemo(
-    () => rooms.filter((r) => r.latitude != null && r.longitude != null),
-    [rooms]
-  );
+  const recenter = () => {
+    if (userLocation) {
+      const r: Region = { ...userLocation, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+      setRegion(r);
+      mapRef.current?.animateToRegion(r, 500);
+      loadBounds(r);
+    }
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.flex}>
+      <View style={styles.searchWrap}>
+        <SearchBar value={query} onChange={setQuery} onSubmit={runSearch} />
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilters(true)}>
+          <Text style={styles.filterText}>⚙ Filters</Text>
+        </TouchableOpacity>
+      </View>
+
       <MapView
         ref={mapRef}
-        provider={PROVIDER_DEFAULT}
-        style={StyleSheet.absoluteFill}
+        style={styles.map}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        initialRegion={region}
         region={region}
-        onRegionChangeComplete={setRegion}
+        onRegionChangeComplete={onRegionChangeComplete}
         showsUserLocation
         showsMyLocationButton={false}
       >
-        {markers.map((room) => (
-          <Marker
-            key={room.id}
-            coordinate={{
-              latitude: room.latitude as number,
-              longitude: room.longitude as number,
-            }}
-            onPress={() => setSelectedId(room.id)}
-            tracksViewChanges={false}
-          >
-            <View style={[styles.marker, selectedId === room.id && styles.markerActive]}>
-              <Text style={[styles.markerPrice, selectedId === room.id && styles.markerPriceActive]}>
-                {Math.round(room.rent_amount / 1000)}k
-              </Text>
-            </View>
-          </Marker>
+        {properties.map((p) => (
+          <PropertyMarker
+            key={p.id}
+            property={p}
+            selected={selected?.id === p.id}
+            onPress={() => setSelected(p)}
+          />
         ))}
       </MapView>
 
-      <View style={styles.searchBarWrap}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={colors.mutedForeground} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Where do you want to live?"
-            placeholderTextColor={colors.mutedForeground}
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={submitSearch}
-            returnKeyType="search"
-          />
-          {!!query && (
-            <Pressable onPress={() => { setQuery(''); submitSearch(); }}>
-              <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
-            </Pressable>
-          )}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator color={COLORS.primary} size="small" />
         </View>
-      </View>
+      )}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <Pressable style={styles.locateButton} onPress={recenter} disabled={locating}>
-        {locating ? (
-          <ActivityIndicator size="small" color={colors.primary} />
-        ) : (
-          <Ionicons name="locate" size={22} color={colors.primary} />
-        )}
-      </Pressable>
+      <TouchableOpacity style={styles.locateBtn} onPress={recenter}>
+        <Text style={styles.locateText}>📍</Text>
+      </TouchableOpacity>
 
-      <Pressable style={styles.sheetToggle} onPress={() => setSheetOpen((v) => !v)}>
-        <Ionicons name={sheetOpen ? 'chevron-down' : 'chevron-up'} size={18} color={colors.foreground} />
-        <Text style={styles.sheetToggleText}>
-          {loading ? 'Loading…' : `${rooms.length} nearby ${rooms.length === 1 ? 'home' : 'homes'}`}
-        </Text>
-      </Pressable>
+      <PropertyPreviewSheet
+        property={selected}
+        onClose={() => setSelected(null)}
+        onView={(id) => {
+          setSelected(null);
+          router.push(`/property/${id}`);
+        }}
+        onBook={(id) => {
+          setSelected(null);
+          router.push(`/property/${id}/book`);
+        }}
+      />
 
-      {sheetOpen && (
-        <View style={styles.sheet}>
-          {loading ? (
-            <ActivityIndicator style={{ marginVertical: 32 }} color={colors.primary} />
-          ) : rooms.length === 0 ? (
-            <EmptyState
-              icon="map-outline"
-              title="No homes found nearby yet"
-              message="Try moving the map or searching a different area."
-            />
-          ) : (
-            <FlatList
-              data={rooms}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <PropertyCard
-                  room={item}
-                  onPress={() => router.push({ pathname: '/property/[id]', params: { id: item.property_id || item.id } })}
-                />
-              )}
-            />
-          )}
-        </View>
+      {showFilters && (
+        <FilterSheet
+          value={filters}
+          onApply={applyFilters}
+          onReset={() => {
+            setFilters({});
+            loadBounds(region);
+          }}
+          onClose={() => setShowFilters(false)}
+        />
       )}
     </View>
   );
 }
 
-const SHEET_HEIGHT = Math.round(SCREEN_HEIGHT * 0.38);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  searchBarWrap: {
+  flex: { flex: 1, backgroundColor: COLORS.background },
+  searchWrap: {
     position: 'absolute',
-    top: 52,
-    left: 16,
-    right: 16,
+    top: 0,
+    left: 0,
+    right: 0,
     zIndex: 10,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 12,
+    paddingTop: 48,
     gap: 8,
-    backgroundColor: colors.background,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    backgroundColor: 'transparent',
   },
-  searchInput: { flex: 1, fontSize: 15, color: colors.foreground },
-  locateButton: {
+  filterBtn: {
+    alignSelf: 'flex-end',
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  map: { width: Dimensions.get('window').width, height: Dimensions.get('window').height },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 110,
+    alignSelf: 'center',
+    backgroundColor: COLORS.card,
+    padding: 8,
+    borderRadius: 20,
+  },
+  errorText: {
+    position: 'absolute',
+    top: 110,
+    alignSelf: 'center',
+    backgroundColor: COLORS.danger,
+    color: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    fontSize: 12,
+  },
+  locateBtn: {
     position: 'absolute',
     right: 16,
-    bottom: SHEET_HEIGHT + 20,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.background,
+    bottom: 28,
+    backgroundColor: COLORS.card,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
-    elevation: 4,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  sheetToggle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: SHEET_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  sheetToggleText: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: SHEET_HEIGHT,
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 12,
-    elevation: 8,
-    shadowColor: '#0f172a',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -4 },
+    shadowRadius: 6,
+    elevation: 4,
   },
-  marker: {
-    backgroundColor: colors.background,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  markerActive: { backgroundColor: colors.primary },
-  markerPrice: { fontSize: 12, fontWeight: '800', color: colors.primary },
-  markerPriceActive: { color: colors.primaryForeground },
+  locateText: { fontSize: 22 },
 });

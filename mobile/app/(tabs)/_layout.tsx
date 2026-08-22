@@ -1,76 +1,48 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../src/theme';
+import React from 'react';
+import { Tabs, Redirect } from 'expo-router';
+import { Text } from 'react-native';
+import { useAuth } from '@/lib/auth';
+import { COLORS } from '@/lib/theme';
+import { LoadingState } from '@/components/States';
 
-const TAB_ICONS = {
-  index: ['map-outline', 'map'] as const,
-  search: ['search-outline', 'search'] as const,
-  saved: ['heart-outline', 'heart'] as const,
-  viewings: ['calendar-outline', 'calendar'] as const,
-  account: ['person-outline', 'person'] as const,
-} as const;
+function TabIcon({ emoji }: { emoji: string }) {
+  return <Text style={{ fontSize: 20 }}>{emoji}</Text>;
+}
 
 export default function TabsLayout() {
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingState />;
+  if (!user) return <Redirect href="/(auth)/login" />;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.teal700,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 6,
-          paddingTop: 6,
-        },
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.muted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarStyle: { borderTopColor: COLORS.border, height: 60, paddingBottom: 8 },
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Map',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={TAB_ICONS.index[focused ? 1 : 0]} size={size - 2} color={color} />
-          ),
-        }}
+        options={{ title: 'Home', tabBarIcon: () => <TabIcon emoji="🗺️" /> }}
       />
       <Tabs.Screen
-        name="search"
-        options={{
-          title: 'Search',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={TAB_ICONS.search[focused ? 1 : 0]} size={size - 2} color={color} />
-          ),
-        }}
+        name="explore"
+        options={{ title: 'Explore', tabBarIcon: () => <TabIcon emoji="🔎" /> }}
       />
       <Tabs.Screen
-        name="saved"
-        options={{
-          title: 'Saved',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={TAB_ICONS.saved[focused ? 1 : 0]} size={size - 2} color={color} />
-          ),
-        }}
+        name="bookings"
+        options={{ title: 'Bookings', tabBarIcon: () => <TabIcon emoji="📅" /> }}
       />
       <Tabs.Screen
-        name="viewings"
-        options={{
-          title: 'Viewings',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={TAB_ICONS.viewings[focused ? 1 : 0]} size={size - 2} color={color} />
-          ),
-        }}
+        name="messages"
+        options={{ title: 'Messages', tabBarIcon: () => <TabIcon emoji="💬" /> }}
       />
       <Tabs.Screen
-        name="account"
-        options={{
-          title: 'Account',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={TAB_ICONS.account[focused ? 1 : 0]} size={size - 2} color={color} />
-          ),
-        }}
+        name="profile"
+        options={{ title: 'Profile', tabBarIcon: () => <TabIcon emoji="👤" /> }}
       />
     </Tabs>
   );

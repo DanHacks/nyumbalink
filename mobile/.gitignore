@@ -1,59 +1,25 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# Expo / Node
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+npm-debug.*
+yarn-error.log
+
+# Native build artifacts (EAS builds generate these remotely)
+ios/
+android/
+
+# Keys / secrets
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.env
+.env.local
+
+# OS / editor
 .DS_Store
-.atom/
-.buildlog/
-.history
-.svn/
-migrate_working_dir/
-
-# IntelliJ
-*.iml
-*.ipr
-*.iws
-*.tmproj
-*.swp
-.idea/
-
-# Android Studio
-*.tmp
-*.bak
-*.swp
-*.swo
-*~
-
-# Flutter / Dart / Pub
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-**/doc/api/
-.pub-cache/
-build/
-**/android/**/gradle-wrapper.jar
-**/android/.gradle/
-**/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
-**/android/local.properties
-**/android/**/GeneratedPluginRegistrant.java
-**/android/key.properties
-*.keystore
-**/ios/Runner/GeneratedPluginRegistrant.swift
-**/android/**/BuildConfig.java
-.flutter-plugins
-# Symbols
-**/android/app/debug/output-metadata.json
-**/android/app/profile/output-metadata.json
-**/android/app/release/output-metadata.json
-
-# Obfuscation related
-app.*.map.json
-
-# Exceptions
-!/packages/flutter_tools/test/data/dart_dependencies_test/**/*.dart
-!/dev/**/*.S
-!/examples/layers/**/*.dart
-!/examples/layers/**/*.png
+*.orig.*

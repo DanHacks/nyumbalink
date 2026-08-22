@@ -5,40 +5,62 @@
     "scheme": "nyumbalink",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0e7490"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ke.nyumbalink.app"
+      "bundleIdentifier": "com.nyumbalink.app",
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+      }
     },
     "android": {
-      "package": "ke.nyumbalink.app",
-      "adaptiveIcon": {
-        "backgroundColor": "#16A34A",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+      "package": "com.nyumbalink.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
       },
-      "predictiveBackGestureEnabled": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0e7490"
+      },
       "permissions": [
+        "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+        "CAMERA",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
+      ],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      "expo-status-bar",
-      [
-        "expo-location",
-        {
-          "locationWhenInUsePermission": "NyumbaLink uses your location to show properties near you."
-        }
-      ],
-      "expo-web-browser"
-    ]
+      "expo-location",
+      "expo-camera",
+      "expo-notifications",
+      "expo-asset",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "apiUrl": "https://nyumba.hytechsolution.co.ke",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "nyumbalink-mobile"
+      }
+    }
   }
 }

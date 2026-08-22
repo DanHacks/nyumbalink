@@ -1,123 +1,166 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
 } from 'react-native';
-import { Link, Stack } from 'expo-router';
-import { useAuthStore } from '../../src/store/authStore';
-import { colors, radius } from '../../src/theme';
+import { Link } from 'expo-router';
+import { useAuth } from '@/lib/auth';
+import { COLORS } from '@/lib/theme';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
+import { ErrorState } from '@/components/States';
 
-export default function LoginPage() {
-  const login = useAuthStore((s) => s.login);
+export default function LoginScreen() {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = async () => {
+  const submit = async () => {
+    setError('');
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError('Please enter your email and password.');
       return;
     }
-    setIsLoading(true);
-    setError('');
+    setBusy(true);
     try {
-      await login(email.trim(), password);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please try again.');
+      await login(email.trim().toLowerCase(), password);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Login failed. Check your credentials.');
     } finally {
-      setIsLoading(false);
+      setBusy(false);
     }
   };
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: colors.background }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
-            <Text style={styles.logo}>NyumbaLink</Text>
-            <Text style={styles.tagline}>Find your place. Live your way.</Text>
-          </View>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Image source={require('@/assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.subtitle}>Sign in to find your next home.</Text>
 
-          <View style={styles.form}>
-            <Text style={styles.title}>Welcome back</Text>
-            {!!error && <Text style={styles.error}>{error}</Text>}
+        {error ? <ErrorState message={error} /> : null}
 
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          placeholderTextColor={COLORS.muted}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          placeholderTextColor={COLORS.muted}
+        />
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Your password"
-              placeholderTextColor={colors.mutedForeground}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+        <TouchableOpacity style={styles.primary} onPress={submit} disabled={busy}>
+          <Text style={styles.primaryText}>{busy ? 'Signing in…' : 'Sign in'}</Text>
+        </TouchableOpacity>
 
-            <Pressable style={[styles.button, isLoading && { opacity: 0.7 }]} onPress={handleSubmit} disabled={isLoading}>
-              <Text style={styles.buttonText}>{isLoading ? 'Signing in…' : 'Sign In'}</Text>
-            </Pressable>
+        <View style={styles.divider}>
+          <Text style={styles.dividerText}>or</Text>
+        </View>
 
-            <Text style={styles.footer}>
-              New to NyumbaLink?{' '}
-              <Link href="/(auth)/register" style={styles.link}>
-                Create an account
-              </Link>
-            </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </>
+        <GoogleSignInButton onError={setError} />
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>New to NyumbaLink? </Text>
+          <Link href="/(auth)/register" asChild>
+            <TouchableOpacity>
+              <Text style={styles.link}>Create account</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  header: { alignItems: 'center', marginBottom: 32 },
-  logo: { fontSize: 28, fontWeight: '800', color: colors.primary },
-  tagline: { fontSize: 14, color: colors.mutedForeground, marginTop: 4 },
-  form: { gap: 6 },
-  title: { fontSize: 22, fontWeight: '700', color: colors.foreground, marginBottom: 12 },
-  error: {
-    color: colors.destructive,
-    backgroundColor: '#fef2f2',
-    borderRadius: radius.md,
-    padding: 10,
-    marginBottom: 8,
+  flex: { flex: 1, backgroundColor: COLORS.background },
+  container: {
+    padding: 24,
+    paddingTop: 64,
+    flexGrow: 1,
+  },
+  logo: {
+    width: 96,
+    height: 96,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.muted,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 50,
+    fontSize: 15,
+    marginBottom: 12,
+    color: COLORS.text,
+  },
+  primary: {
+    backgroundColor: COLORS.primary,
+    height: 50,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  primaryText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  divider: {
+    alignItems: 'center',
+    marginVertical: 14,
+  },
+  dividerText: {
+    color: COLORS.muted,
     fontSize: 13,
   },
-  label: { fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 6, marginTop: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: colors.foreground,
-    backgroundColor: colors.background,
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 18,
   },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 20,
+  footerText: {
+    color: COLORS.muted,
+    fontSize: 14,
   },
-  buttonText: { color: colors.primaryForeground, fontWeight: '700', fontSize: 16 },
-  footer: { textAlign: 'center', marginTop: 18, color: colors.mutedForeground, fontSize: 14 },
-  link: { color: colors.primary, fontWeight: '700' },
+  link: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
 });
