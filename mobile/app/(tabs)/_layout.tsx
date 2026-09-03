@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs, Redirect } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
 import { useAuth } from '@/lib/auth';
 import { COLORS } from '@/lib/theme';
@@ -10,9 +10,8 @@ function TabIcon({ emoji }: { emoji: string }) {
 }
 
 export default function TabsLayout() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) return <LoadingState />;
-  if (!user) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs

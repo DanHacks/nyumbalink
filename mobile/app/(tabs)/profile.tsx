@@ -17,6 +17,20 @@ function Row({ label, value }: { label: string; value: string }) {
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  if (!user) {
+    return (
+      <View style={styles.guestWrap}>
+        <Text style={styles.guestTitle}>Welcome to NyumbaLink</Text>
+        <Text style={styles.guestSub}>Sign in to manage your profile, bookings and messages.</Text>
+        <TouchableOpacity style={styles.primary} onPress={() => router.push('/(auth)/login' as any)}>
+          <Text style={styles.primaryText}>Sign in</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(auth)/register' as any)}>
+          <Text style={styles.secondaryText}>Create account</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   const initials = (user?.full_name || user?.email || '?')
     .split(' ')
     .map((s) => s[0])
@@ -67,6 +81,13 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 24, paddingTop: 64, flexGrow: 1, backgroundColor: COLORS.background },
+  guestWrap: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
+  guestTitle: { fontSize: 22, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
+  guestSub: { fontSize: 14, color: COLORS.muted, textAlign: 'center' },
+  primary: { backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12, marginTop: 8 },
+  primaryText: { color: '#fff', fontWeight: '800' },
+  secondary: { borderWidth: 1, borderColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
+  secondaryText: { color: COLORS.primary, fontWeight: '800' },
   avatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   avatarText: { color: '#fff', fontSize: 30, fontWeight: '800' },
   name: { fontSize: 20, fontWeight: '800', color: COLORS.text, textAlign: 'center', marginTop: 12 },

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/lib/auth';
 import { LoadingState, ErrorState, EmptyState } from '@/components/States';
 import { getMyBookings } from '@/lib/api';
 import { COLORS } from '@/lib/theme';
@@ -21,9 +22,28 @@ function statusColor(status: string) {
 
 export default function BookingsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  if (!user) {
+    return (
+      <View style={styles.flex}>
+        <Text style={styles.heading}>Bookings</Text>
+        <View style={styles.center}>
+          <Text style={styles.guestTitle}>Sign in to view your bookings</Text>
+          <Text style={styles.guestSub}>You need an account to book viewings.</Text>
+          <TouchableOpacity style={styles.primary} onPress={() => router.push('/(auth)/login' as any)}>
+            <Text style={styles.primaryText}>Sign in</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(auth)/register' as any)}>
+            <Text style={styles.secondaryText}>Create account</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const load = async () => {
     setLoading(true);
@@ -88,4 +108,11 @@ const styles = StyleSheet.create({
   sub: { fontSize: 13, color: COLORS.muted, marginTop: 4 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
+  guestTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
+  guestSub: { fontSize: 14, color: COLORS.muted, textAlign: 'center' },
+  primary: { backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12, marginTop: 8 },
+  primaryText: { color: '#fff', fontWeight: '800' },
+  secondary: { borderWidth: 1, borderColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
+  secondaryText: { color: COLORS.primary, fontWeight: '800' },
 });

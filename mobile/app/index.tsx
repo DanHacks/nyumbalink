@@ -6,7 +6,7 @@ import { LoadingState } from '@/components/States';
 export default function Index() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingState message="Starting NyumbaLink…" />;
-  if (!user) return <Redirect href="/(auth)/login" />;
-  if (!user.role) return <Redirect href="/(auth)/select-role" />;
+  // Guest-first: show the map even without sign-in. Only force role selection for signed-in users without a role.
+  if (user && !user.role) return <Redirect href="/(auth)/select-role" />;
   return <Redirect href="/(tabs)" />;
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '@/lib/auth';
 import { createBooking } from '@/lib/api';
 import { COLORS } from '@/lib/theme';
 import { ErrorState } from '@/components/States';
@@ -8,7 +9,24 @@ import { ErrorState } from '@/components/States';
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const [date, setDate] = useState('');
+
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.doneEmoji}>🔒</Text>
+        <Text style={styles.heading}>Sign in to book</Text>
+        <Text style={styles.sub}>You need an account to request a viewing. Your progress will be saved.</Text>
+        <TouchableOpacity style={styles.primary} onPress={() => router.push('/(auth)/login' as any)}>
+          <Text style={styles.primaryText}>Sign in</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.secondary} onPress={() => router.push('/(auth)/register' as any)}>
+          <Text style={styles.secondaryText}>Create account</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('09:30');
   const [notes, setNotes] = useState('');
@@ -86,15 +104,18 @@ export default function BookScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, paddingTop: 56, flexGrow: 1, backgroundColor: COLORS.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: COLORS.background },
-  heading: { fontSize: 22, fontWeight: '800', color: COLORS.text },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: COLORS.background, gap: 12 },
+  heading: { fontSize: 22, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
+  sub: { fontSize: 14, color: COLORS.muted, textAlign: 'center', marginBottom: 8 },
   label: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginTop: 16, marginBottom: 8 },
   input: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 12, fontSize: 15, color: COLORS.text },
   row: { flexDirection: 'row', gap: 12 },
   col: { flex: 1 },
   textarea: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 12, fontSize: 14, color: COLORS.text, minHeight: 80 },
-  primary: { backgroundColor: COLORS.primary, paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 20 },
+  primary: { backgroundColor: COLORS.primary, paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 20, paddingHorizontal: 28 },
   primaryText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  secondary: { borderWidth: 1, borderColor: COLORS.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center', paddingHorizontal: 28 },
+  secondaryText: { color: COLORS.primary, fontWeight: '800', fontSize: 15 },
   doneEmoji: { fontSize: 48 },
   doneTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text, marginTop: 8 },
 });
