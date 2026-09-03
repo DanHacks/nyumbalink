@@ -189,13 +189,15 @@ export default function MapDisplay({
       >
         {mapType === 'street' ? (
           <TileLayer
-            attribution='&copy; Google'
-            url={`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`}
+            attribution="&copy; Google"
+            url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+            maxZoom={20}
           />
         ) : (
           <TileLayer
-            attribution='&copy; Google'
-            url={`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`}
+            attribution="&copy; Google"
+            url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+            maxZoom={20}
           />
         )}
 

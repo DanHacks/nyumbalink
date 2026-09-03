@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, ChevronDown, ShieldCheck, Bell, User } from 'lucide-react';
+import { Search, ChevronDown, ShieldCheck, Bell, User, Menu, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,7 @@ export default function WebHeader() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [catOpen, setCatOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
@@ -96,9 +97,9 @@ export default function WebHeader() {
           </Link>
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="ml-auto hidden shrink-0 items-center gap-2 xl:flex">
           <button aria-label="Notifications" className="rounded-md p-2 text-slate-500 hover:bg-slate-50">
-            <Bell className="h-4.5 w-4.5 h-[18px] w-[18px]" aria-hidden />
+            <Bell className="h-[18px] w-[18px]" aria-hidden />
           </button>
           {isAuthenticated && user ? (
             <>
@@ -126,7 +127,70 @@ export default function WebHeader() {
             </>
           )}
         </div>
+
+        <button
+          onClick={() => setMobileOpen((o) => !o)}
+          aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
+          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 xl:hidden"
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
+
+      {mobileOpen && (
+        <div className="border-t border-slate-200 bg-white xl:hidden">
+          <nav className="mx-auto max-w-7xl space-y-1 px-6 py-4" aria-label="Mobile">
+            {PRIMARY.map((l) => (
+              <NavLink
+                key={l.label}
+                to={l.to}
+                end={l.end}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'block rounded-md px-3 py-2 text-sm font-medium',
+                    isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-50',
+                  )
+                }
+              >
+                {l.label}
+              </NavLink>
+            ))}
+            <div className="border-t border-slate-100 pt-3">
+              <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Categories</p>
+              {CATEGORIES.map((c) => (
+                <Link key={c.label} to={c.to} onClick={() => setMobileOpen(false)} className="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  {c.label}
+                </Link>
+              ))}
+            </div>
+            <div className="border-t border-slate-100 pt-3">
+              {isAuthenticated ? (
+                <button
+                  onClick={async () => {
+                    await logout();
+                    setMobileOpen(false);
+                    navigate('/');
+                  }}
+                  className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Log out
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 rounded-md border border-slate-200 px-3 py-2 text-center text-sm font-medium">
+                    Sign in
+                  </Link>
+                  <Link to="/register" onClick={() => setMobileOpen(false)} className="flex-1 rounded-md bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white">
+                    Get started
+                  </Link>
+                </div>
+              )}
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

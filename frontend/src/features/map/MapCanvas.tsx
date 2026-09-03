@@ -273,9 +273,9 @@ export default function MapCanvas({
       attributionControl={false}
     >
       {satellite ? (
-        <TileLayer url={`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`} />
+        <TileLayer url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" attribution="&copy; Google" maxZoom={20} />
       ) : (
-        <TileLayer url={`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`} />
+        <TileLayer url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}" attribution="&copy; Google" maxZoom={20} />
       )}
 
       <ViewportWatcher onChange={(v) => { setZoom(v.zoom); onViewportChange(v); }} />
