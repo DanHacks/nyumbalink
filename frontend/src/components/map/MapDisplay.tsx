@@ -224,9 +224,7 @@ export default function MapDisplay({
         zoomControl={false}
         ref={setMap}
       >
-        {mapsKey ? (
-          <GoogleBaseLayer satellite={mapType === 'satellite'} apiKey={mapsKey} />
-        ) : mapsLoading ? null : mapType === 'street' ? (
+        {mapType === 'street' ? (
           <TileLayer
             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -247,6 +245,7 @@ export default function MapDisplay({
             />
           </>
         )}
+        {mapsKey && <GoogleBaseLayer satellite={mapType === 'satellite'} apiKey={mapsKey} />}
 
         <LocationMarker
           onLocationFound={(pos) => setUserLocation(pos)}

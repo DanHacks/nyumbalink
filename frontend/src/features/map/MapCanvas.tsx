@@ -315,13 +315,12 @@ export default function MapCanvas({
       className="h-full w-full"
       attributionControl={false}
     >
-      {mapsKey ? (
-        <GoogleBaseLayer satellite={satellite} apiKey={mapsKey} />
-      ) : mapsLoading ? null : satellite ? (
+      {satellite ? (
         <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" maxZoom={20} />
       ) : (
         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" maxZoom={20} />
       )}
+      {mapsKey && <GoogleBaseLayer satellite={satellite} apiKey={mapsKey} />}
 
       <ViewportWatcher onChange={(v) => { setZoom(v.zoom); onViewportChange(v); }} />
       <FlyTo target={flyTarget} />
