@@ -7,23 +7,29 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.gridlayer.googlemutant';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { useGoogleMapsKey } from '@/hooks/useGoogleMapsKey';
 import { MapPin, Navigation, Satellite, Map as MapIcon, Locate } from 'lucide-react';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
-if (GOOGLE_MAPS_API_KEY) setOptions({ key: GOOGLE_MAPS_API_KEY, v: 'weekly' });
 let googleMapsPromise: Promise<void> | null = null;
-function ensureGoogleMaps(): Promise<void> {
-  if (!GOOGLE_MAPS_API_KEY) return Promise.reject(new Error('Missing VITE_GOOGLE_MAPS_KEY'));
+let configuredKey: string | null = null;
+function ensureGoogleMaps(apiKey: string): Promise<void> {
+  if (!apiKey) return Promise.reject(new Error('Missing Google Maps API key'));
+  if (configuredKey !== apiKey) {
+    setOptions({ key: apiKey, v: 'weekly' });
+    configuredKey = apiKey;
+    googleMapsPromise = null;
+  }
   if (googleMapsPromise) return googleMapsPromise;
   googleMapsPromise = importLibrary('maps').then(() => {}) as Promise<void>;
   return googleMapsPromise;
 }
-function GoogleBaseLayer({ satellite }: { satellite: boolean }) {
+function GoogleBaseLayer({ satellite, apiKey }: { satellite: boolean; apiKey: string | null }) {
   const map = useMap();
   const layerRef = useRef<any>(null);
   useEffect(() => {
+    if (!apiKey) return;
     let cancelled = false;
-    ensureGoogleMaps().then(() => {
+    ensureGoogleMaps(apiKey).then(() => {
       if (cancelled) return;
       // @ts-ignore
       const layer = (L.gridLayer as any).googleMutant({ type: satellite ? 'hybrid' : 'roadmap' }).addTo(map);
@@ -33,7 +39,7 @@ function GoogleBaseLayer({ satellite }: { satellite: boolean }) {
       cancelled = true;
       if (layerRef.current) { try { map.removeLayer(layerRef.current); } catch {} layerRef.current = null; }
     };
-  }, [map, satellite]);
+  }, [map, satellite, apiKey]);
   return null;
 }
 
@@ -188,6 +194,7 @@ export default function MapDisplay({
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [routeDest, setRouteDest] = useState<[number, number] | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
+  const { key: mapsKey, loading: mapsLoading } = useGoogleMapsKey();
 
   const locateUser = useCallback(() => {
     if (map) {
@@ -217,9 +224,9 @@ export default function MapDisplay({
         zoomControl={false}
         ref={setMap}
       >
-        {GOOGLE_MAPS_API_KEY ? (
-          <GoogleBaseLayer satellite={mapType === 'satellite'} />
-        ) : mapType === 'street' ? (
+        {mapsKey ? (
+          <GoogleBaseLayer satellite={mapType === 'satellite'} apiKey={mapsKey} />
+        ) : mapsLoading ? null : mapType === 'street' ? (
           <TileLayer
             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

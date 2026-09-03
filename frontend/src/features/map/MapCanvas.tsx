@@ -5,35 +5,39 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
 import 'leaflet.gridlayer.googlemutant';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { useGoogleMapsKey } from '@/hooks/useGoogleMapsKey';
 import type { MapProperty } from './types';
 import { KIND_EMOJI } from './types';
 import { clusterProperties } from './logic';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
-if (GOOGLE_MAPS_API_KEY) setOptions({ key: GOOGLE_MAPS_API_KEY, v: 'weekly' });
 let googleMapsPromise: Promise<void> | null = null;
-function ensureGoogleMaps(): Promise<void> {
-  if (!GOOGLE_MAPS_API_KEY) return Promise.reject(new Error('Missing VITE_GOOGLE_MAPS_KEY'));
+let configuredKey: string | null = null;
+function ensureGoogleMaps(apiKey: string): Promise<void> {
+  if (!apiKey) return Promise.reject(new Error('Missing Google Maps API key'));
+  if (configuredKey !== apiKey) {
+    setOptions({ key: apiKey, v: 'weekly' });
+    configuredKey = apiKey;
+    googleMapsPromise = null;
+  }
   if (googleMapsPromise) return googleMapsPromise;
   googleMapsPromise = importLibrary('maps').then(() => {}) as Promise<void>;
   return googleMapsPromise;
 }
 
-function GoogleBaseLayer({ satellite }: { satellite: boolean }) {
+function GoogleBaseLayer({ satellite, apiKey }: { satellite: boolean; apiKey: string | null }) {
   const map = useMap();
   const layerRef = useRef<any>(null);
   useEffect(() => {
+    if (!apiKey) return;
     let cancelled = false;
-    ensureGoogleMaps()
+    ensureGoogleMaps(apiKey)
       .then(() => {
         if (cancelled) return;
         // @ts-ignore - added by leaflet.gridlayer.googlemutant
         const layer = (L.gridLayer as any).googleMutant({ type: satellite ? 'hybrid' : 'roadmap' }).addTo(map);
         layerRef.current = layer;
       })
-      .catch(() => {
-        // fallback handled by TileLayer below if needed
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
       if (layerRef.current) {
@@ -41,7 +45,7 @@ function GoogleBaseLayer({ satellite }: { satellite: boolean }) {
         layerRef.current = null;
       }
     };
-  }, [map, satellite]);
+  }, [map, satellite, apiKey]);
   return null;
 }
 
@@ -299,6 +303,7 @@ export default function MapCanvas({
 }) {
   const [zoom, setZoom] = useState(13);
   const clusters = useMemo(() => clusterProperties(properties, zoom), [properties, zoom]);
+  const { key: mapsKey, loading: mapsLoading } = useGoogleMapsKey();
 
   return (
     <MapContainer
@@ -310,9 +315,9 @@ export default function MapCanvas({
       className="h-full w-full"
       attributionControl={false}
     >
-      {GOOGLE_MAPS_API_KEY ? (
-        <GoogleBaseLayer satellite={satellite} />
-      ) : satellite ? (
+      {mapsKey ? (
+        <GoogleBaseLayer satellite={satellite} apiKey={mapsKey} />
+      ) : mapsLoading ? null : satellite ? (
         <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" maxZoom={20} />
       ) : (
         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" maxZoom={20} />

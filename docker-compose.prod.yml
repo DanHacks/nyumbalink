@@ -81,7 +81,6 @@ services:
       args:
         VITE_API_URL: /api/v1
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-319632867370-2pdu6p82056qpo7tho0snf9v3k2globi.apps.googleusercontent.com}
-        VITE_GOOGLE_MAPS_KEY: ${VITE_GOOGLE_MAPS_KEY:-AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc}
     restart: unless-stopped
 
   nginx:
