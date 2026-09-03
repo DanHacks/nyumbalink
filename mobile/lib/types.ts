@@ -37,6 +37,13 @@ export interface MapBounds {
   zoom?: number;
 }
 
+export interface Region {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
 export interface MapProperty {
   id: string;
   property_code?: string;

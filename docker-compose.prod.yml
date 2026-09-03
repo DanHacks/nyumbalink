@@ -44,8 +44,8 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "false"
       CORS_ORIGINS: '["https://nyumba.hytechsolution.co.ke"]'
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-319632867370-o8hnhe1b0dfl614gn7c2dq3kne4qlqo5.apps.googleusercontent.com}
-      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-319632867370-2pdu6p82056qpo7tho0snf9v3k2globi.apps.googleusercontent.com}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc}
     depends_on:
       db:
         condition: service_healthy
@@ -80,7 +80,8 @@ services:
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: /api/v1
-        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-319632867370-o8hnhe1b0dfl614gn7c2dq3kne4qlqo5.apps.googleusercontent.com}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-319632867370-2pdu6p82056qpo7tho0snf9v3k2globi.apps.googleusercontent.com}
+        VITE_GOOGLE_MAPS_KEY: ${VITE_GOOGLE_MAPS_KEY:-AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc}
     restart: unless-stopped
 
   nginx:

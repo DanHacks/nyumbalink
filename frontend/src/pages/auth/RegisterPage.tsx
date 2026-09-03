@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuthStore, homeRouteFor } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
@@ -196,6 +197,33 @@ export default function RegisterPage() {
             {isLoading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
+
+        <div className="relative my-2">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-gray-500">or continue with</span>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={async (res) => {
+              if (!res.credential) return;
+              try {
+                await useAuthStore.getState().googleLogin(res.credential);
+                toast.success('Welcome!');
+                const role = useAuthStore.getState().user?.role;
+                navigate(homeRouteFor(role));
+              } catch (e: any) {
+                toast.error(e.response?.data?.detail || 'Google sign-in failed');
+              }
+            }}
+            onError={() => toast.error('Google sign-in failed')}
+            useOneTap={false}
+          />
+        </div>
 
         <p className="text-center text-sm text-gray-600">
           <button

@@ -189,21 +189,14 @@ export default function MapDisplay({
       >
         {mapType === 'street' ? (
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; Google'
+            url={`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`}
           />
         ) : (
-          <>
-            <TileLayer
-              attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            />
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-              opacity={0.35}
-            />
-          </>
+          <TileLayer
+            attribution='&copy; Google'
+            url={`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`}
+          />
         )}
 
         <LocationMarker

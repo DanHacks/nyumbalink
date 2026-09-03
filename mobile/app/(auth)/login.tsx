@@ -45,7 +45,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <Image source={require('@/assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>Welcome back</Text>
         <Text style={styles.subtitle}>Sign in to find your next home.</Text>
 

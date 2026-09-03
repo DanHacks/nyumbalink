@@ -6,8 +6,7 @@ import FilterSheet from '@/components/FilterSheet';
 import { LoadingState, ErrorState, EmptyState } from '@/components/States';
 import { getPropertiesInBounds, geocode } from '@/lib/api';
 import { COLORS } from '@/lib/theme';
-import type { MapProperty, PropertyFilters } from '@/lib/types';
-import { Region } from 'react-native-maps';
+import type { MapProperty, PropertyFilters, Region } from '@/lib/types';
 
 const EXPLORE_REGION: Region = {
   latitude: -1.2921,

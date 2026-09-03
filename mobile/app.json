@@ -7,6 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "icon": "./assets/favicon.png",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,25 +16,33 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nyumbalink.app",
       "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc"
       }
     },
     "android": {
       "package": "com.nyumbalink.app",
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc"
         }
       },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/favicon.png",
         "backgroundColor": "#0e7490"
       },
       "permissions": [
+        "INTERNET",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
@@ -48,7 +57,8 @@
       "expo-camera",
       "expo-notifications",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": false

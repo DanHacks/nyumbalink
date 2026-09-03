@@ -1,19 +1,23 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { Linking } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { COLORS, KIND_EMOJI } from '@/lib/theme';
 import { formatPrice, formatRating, formatDistance } from '@/lib/format';
+import { externalDirectionsUrl } from '@/lib/maps';
 import VerifiedBadge from './VerifiedBadge';
 import type { MapProperty } from '@/lib/types';
 
 export default function PropertyPreviewSheet({
   property,
+  userLocation,
   onClose,
   onView,
   onBook,
 }: {
   property: MapProperty | null;
+  userLocation: { latitude: number; longitude: number } | null;
   onClose: () => void;
   onView: (id: string) => void;
   onBook: (id: string) => void;
@@ -76,6 +80,19 @@ export default function PropertyPreviewSheet({
             <Text style={styles.bookText}>Book viewing</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={styles.directionsBtn}
+          onPress={() =>
+            Linking.openURL(
+              externalDirectionsUrl(userLocation, {
+                latitude: property.latitude,
+                longitude: property.longitude,
+              }),
+            )
+          }
+        >
+          <Text style={styles.directionsText}>Get directions</Text>
+        </TouchableOpacity>
       </BottomSheetView>
     </BottomSheet>
   );
@@ -160,5 +177,20 @@ const styles = StyleSheet.create({
   bookText: {
     color: COLORS.primary,
     fontWeight: '800',
+  },
+  directionsBtn: {
+    marginTop: 10,
+    alignSelf: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  directionsText: {
+    color: COLORS.text,
+    fontWeight: '700',
+    fontSize: 13,
   },
 });

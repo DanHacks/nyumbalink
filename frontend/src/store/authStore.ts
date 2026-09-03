@@ -5,6 +5,7 @@ import { authApi } from '@/lib/api';
 interface AuthStore extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   selectRole: (role: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
@@ -70,6 +71,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({
       accessToken: access_token,
       refreshToken: refresh_token,
+      isAuthenticated: true,
+    });
+
+    await get().fetchUser();
+  },
+
+  googleLogin: async (idToken: string) => {
+    const response = await authApi.googleLogin(idToken);
+    const { access_token, refresh_token } = response.data;
+
+    localStorage.setItem('access_token', access_token);
+    if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
+
+    set({
+      accessToken: access_token,
+      refreshToken: refresh_token || null,
       isAuthenticated: true,
     });
 

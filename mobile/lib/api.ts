@@ -2,9 +2,9 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 
 const API_URL =
-  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
   process.env.EXPO_PUBLIC_API_URL ||
-  'https://nyumbalink.hytechsolution.co.ke';
+  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
+  'https://nyumba.hytechsolution.co.ke';
 
 export const API_BASE = `${API_URL}/api/v1`;
 export const MEDIA_BASE = API_URL;

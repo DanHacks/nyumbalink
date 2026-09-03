@@ -58,7 +58,7 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Image source={require('@/assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>Create your account</Text>
         <Text style={styles.subtitle}>Sign in as</Text>
 

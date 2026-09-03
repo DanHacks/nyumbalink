@@ -1,30 +1,30 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Dimensions, Platform } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import SearchBar from '@/components/SearchBar';
-import PropertyMarker from '@/components/PropertyMarker';
+import NyumbaMap, { type NyumbaMapCameraTarget } from '@/components/NyumbaMap';
 import PropertyPreviewSheet from '@/components/PropertyPreviewSheet';
 import FilterSheet from '@/components/FilterSheet';
 import { getPropertiesInBounds, geocode } from '@/lib/api';
+import { deltaToZoom } from '@/lib/maps';
 import { COLORS } from '@/lib/theme';
-import type { MapProperty, PropertyFilters } from '@/lib/types';
+import type { MapBounds, MapProperty, PropertyFilters } from '@/lib/types';
 
-const DEFAULT_REGION: Region = {
+const DEFAULT_REGION = {
   latitude: -1.2921,
   longitude: 36.8219,
   latitudeDelta: 0.08,
   longitudeDelta: 0.08,
 };
 
-function regionToBounds(r: Region) {
+function regionToBounds(r: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }): MapBounds {
   return {
     north: r.latitude + r.latitudeDelta / 2,
     south: r.latitude - r.latitudeDelta / 2,
     east: r.longitude + r.longitudeDelta / 2,
     west: r.longitude - r.longitudeDelta / 2,
-    zoom: Math.round(12 - r.latitudeDelta * 100),
+    zoom: Math.round(deltaToZoom(r.latitudeDelta)),
   };
 }
 
@@ -47,28 +47,40 @@ function filtersToParams(f: PropertyFilters) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const mapRef = useRef<MapView>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [region, setRegion] = useState<Region>(DEFAULT_REGION);
+  const [bounds, setBounds] = useState<MapBounds>({
+    north: DEFAULT_REGION.latitude + 0.04,
+    south: DEFAULT_REGION.latitude - 0.04,
+    east: DEFAULT_REGION.longitude + 0.04,
+    west: DEFAULT_REGION.longitude - 0.04,
+    zoom: 11,
+  });
+  const [cameraTarget, setCameraTarget] = useState<NyumbaMapCameraTarget | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [properties, setProperties] = useState<MapProperty[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [offline, setOffline] = useState(false);
+  const [locationBlocked, setLocationBlocked] = useState(false);
+  const [mapError, setMapError] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
   const [selected, setSelected] = useState<MapProperty | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<PropertyFilters>({});
   const [query, setQuery] = useState('');
 
   const loadBounds = useCallback(
-    async (r: Region) => {
+    async (b: MapBounds) => {
       setLoading(true);
       setError('');
       try {
-        const data = await getPropertiesInBounds(regionToBounds(r), filtersToParams(filters));
+        const data = await getPropertiesInBounds(b, filtersToParams(filters));
         setProperties(data as MapProperty[]);
+        setOffline(false);
       } catch {
-        setError('Could not load properties. Check your connection.');
+        setOffline(true);
+        setError('You appear to be offline.');
       } finally {
         setLoading(false);
       }
@@ -82,28 +94,30 @@ export default function HomeScreen() {
       if (status === 'granted') {
         try {
           const pos = await Location.getCurrentPositionAsync({});
-          const loc = {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          };
+          const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
           setUserLocation(loc);
-          const r: Region = { ...loc, latitudeDelta: 0.02, longitudeDelta: 0.02 };
-          setRegion(r);
-          mapRef.current?.animateToRegion(r, 500);
-          loadBounds(r);
+          setCameraTarget({ ...loc, zoom: deltaToZoom(0.02) });
+          const r = { ...loc, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+          const b = regionToBounds(r);
+          setBounds(b);
+          loadBounds(b);
           return;
         } catch {
           /* fall through to default */
         }
+      } else {
+        setLocationBlocked(true);
       }
-      loadBounds(DEFAULT_REGION);
+      const b = regionToBounds(DEFAULT_REGION);
+      setBounds(b);
+      loadBounds(b);
     })();
   }, []);
 
-  const onRegionChangeComplete = (r: Region) => {
-    setRegion(r);
+  const onRegionSettled = (b: MapBounds) => {
+    setBounds(b);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => loadBounds(r), 600);
+    debounceRef.current = setTimeout(() => loadBounds(b), 600);
   };
 
   const runSearch = async () => {
@@ -111,15 +125,12 @@ export default function HomeScreen() {
     try {
       const res = await geocode(query.trim());
       if (res) {
-        const r: Region = {
-          latitude: res.lat,
-          longitude: res.lng,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        };
-        setRegion(r);
-        mapRef.current?.animateToRegion(r, 600);
-        loadBounds(r);
+        const loc = { latitude: res.lat, longitude: res.lng };
+        setCameraTarget({ ...loc, zoom: deltaToZoom(0.02) });
+        const r = { ...loc, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+        const b = regionToBounds(r);
+        setBounds(b);
+        loadBounds(b);
       }
     } catch {
       setError('Location not found.');
@@ -129,16 +140,22 @@ export default function HomeScreen() {
   const applyFilters = (next: PropertyFilters) => {
     setFilters(next);
     setShowFilters(false);
-    loadBounds(region);
+    loadBounds(bounds);
   };
 
   const recenter = () => {
     if (userLocation) {
-      const r: Region = { ...userLocation, latitudeDelta: 0.02, longitudeDelta: 0.02 };
-      setRegion(r);
-      mapRef.current?.animateToRegion(r, 500);
-      loadBounds(r);
+      setCameraTarget({ ...userLocation, zoom: deltaToZoom(0.02) });
+      const r = { ...userLocation, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+      const b = regionToBounds(r);
+      setBounds(b);
+      loadBounds(b);
     }
+  };
+
+  const retryMap = () => {
+    setMapError(false);
+    setMapKey((k) => k + 1);
   };
 
   return (
@@ -150,32 +167,47 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        initialRegion={region}
-        region={region}
-        onRegionChangeComplete={onRegionChangeComplete}
-        showsUserLocation
-        showsMyLocationButton={false}
-      >
-        {properties.map((p) => (
-          <PropertyMarker
-            key={p.id}
-            property={p}
-            selected={selected?.id === p.id}
-            onPress={() => setSelected(p)}
+      {locationBlocked ? (
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>Location permission is unavailable. You can still search manually.</Text>
+        </View>
+      ) : null}
+      {offline && !mapError ? (
+        <View style={[styles.banner, styles.offlineBanner]}>
+          <Text style={styles.bannerText}>You appear to be offline.</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.mapWrap}>
+        {mapError ? (
+          <View style={styles.mapErrorWrap}>
+            <Text style={styles.mapErrorTitle}>Map temporarily unavailable.</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={retryMap}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.listBtn} onPress={() => router.push('/explore' as any)}>
+              <Text style={styles.listText}>Search properties using list view</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <NyumbaMap
+            key={mapKey}
+            properties={properties}
+            userLocation={userLocation}
+            onSelectProperty={(p) => setSelected(p)}
+            onRegionSettled={onRegionSettled}
+            cameraTarget={cameraTarget}
+            onMapError={() => setMapError(true)}
           />
-        ))}
-      </MapView>
+        )}
+      </View>
 
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator color={COLORS.primary} size="small" />
         </View>
       )}
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error && !mapError ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <TouchableOpacity style={styles.locateBtn} onPress={recenter}>
         <Text style={styles.locateText}>📍</Text>
@@ -183,6 +215,7 @@ export default function HomeScreen() {
 
       <PropertyPreviewSheet
         property={selected}
+        userLocation={userLocation}
         onClose={() => setSelected(null)}
         onView={(id) => {
           setSelected(null);
@@ -200,7 +233,7 @@ export default function HomeScreen() {
           onApply={applyFilters}
           onReset={() => {
             setFilters({});
-            loadBounds(region);
+            loadBounds(bounds);
           }}
           onClose={() => setShowFilters(false)}
         />
@@ -232,10 +265,47 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   filterText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
-  map: { width: Dimensions.get('window').width, height: Dimensions.get('window').height },
+  mapWrap: { flex: 1 },
+  banner: {
+    position: 'absolute',
+    top: 100,
+    left: 12,
+    right: 12,
+    zIndex: 9,
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  offlineBanner: { backgroundColor: '#fee2e2' },
+  bannerText: { fontSize: 12, color: '#92400e', fontWeight: '600' },
+  mapErrorWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    padding: 24,
+    gap: 16,
+  },
+  mapErrorTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
+  retryBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  retryText: { color: '#fff', fontWeight: '800' },
+  listBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  listText: { color: COLORS.primary, fontWeight: '700' },
   loadingOverlay: {
     position: 'absolute',
-    top: 110,
+    top: 150,
     alignSelf: 'center',
     backgroundColor: COLORS.card,
     padding: 8,
@@ -243,7 +313,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     position: 'absolute',
-    top: 110,
+    top: 150,
     alignSelf: 'center',
     backgroundColor: COLORS.danger,
     color: '#fff',

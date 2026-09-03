@@ -273,9 +273,9 @@ export default function MapCanvas({
       attributionControl={false}
     >
       {satellite ? (
-        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+        <TileLayer url={`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`} />
       ) : (
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+        <TileLayer url={`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc'}`} />
       )}
 
       <ViewportWatcher onChange={(v) => { setZoom(v.zoom); onViewportChange(v); }} />
