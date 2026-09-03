@@ -5,7 +5,37 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.gridlayer.googlemutant';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { MapPin, Navigation, Satellite, Map as MapIcon, Locate } from 'lucide-react';
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
+if (GOOGLE_MAPS_API_KEY) setOptions({ key: GOOGLE_MAPS_API_KEY, v: 'weekly' });
+let googleMapsPromise: Promise<void> | null = null;
+function ensureGoogleMaps(): Promise<void> {
+  if (!GOOGLE_MAPS_API_KEY) return Promise.reject(new Error('Missing VITE_GOOGLE_MAPS_KEY'));
+  if (googleMapsPromise) return googleMapsPromise;
+  googleMapsPromise = importLibrary('maps').then(() => {}) as Promise<void>;
+  return googleMapsPromise;
+}
+function GoogleBaseLayer({ satellite }: { satellite: boolean }) {
+  const map = useMap();
+  const layerRef = useRef<any>(null);
+  useEffect(() => {
+    let cancelled = false;
+    ensureGoogleMaps().then(() => {
+      if (cancelled) return;
+      // @ts-ignore
+      const layer = (L.gridLayer as any).googleMutant({ type: satellite ? 'hybrid' : 'roadmap' }).addTo(map);
+      layerRef.current = layer;
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      if (layerRef.current) { try { map.removeLayer(layerRef.current); } catch {} layerRef.current = null; }
+    };
+  }, [map, satellite]);
+  return null;
+}
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -187,18 +217,28 @@ export default function MapDisplay({
         zoomControl={false}
         ref={setMap}
       >
-        {mapType === 'street' ? (
+        {GOOGLE_MAPS_API_KEY ? (
+          <GoogleBaseLayer satellite={mapType === 'satellite'} />
+        ) : mapType === 'street' ? (
           <TileLayer
-            attribution="&copy; Google"
-            url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             maxZoom={20}
           />
         ) : (
-          <TileLayer
-            attribution="&copy; Google"
-            url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-            maxZoom={20}
-          />
+          <>
+            <TileLayer
+              attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={20}
+            />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              opacity={0.35}
+              maxZoom={20}
+            />
+          </>
         )}
 
         <LocationMarker

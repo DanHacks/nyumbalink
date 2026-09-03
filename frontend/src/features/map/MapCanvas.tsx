@@ -3,9 +3,47 @@ import { MapContainer, TileLayer, Marker, Circle, useMap, useMapEvents } from 'r
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
+import 'leaflet.gridlayer.googlemutant';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import type { MapProperty } from './types';
 import { KIND_EMOJI } from './types';
 import { clusterProperties } from './logic';
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
+if (GOOGLE_MAPS_API_KEY) setOptions({ key: GOOGLE_MAPS_API_KEY, v: 'weekly' });
+let googleMapsPromise: Promise<void> | null = null;
+function ensureGoogleMaps(): Promise<void> {
+  if (!GOOGLE_MAPS_API_KEY) return Promise.reject(new Error('Missing VITE_GOOGLE_MAPS_KEY'));
+  if (googleMapsPromise) return googleMapsPromise;
+  googleMapsPromise = importLibrary('maps').then(() => {}) as Promise<void>;
+  return googleMapsPromise;
+}
+
+function GoogleBaseLayer({ satellite }: { satellite: boolean }) {
+  const map = useMap();
+  const layerRef = useRef<any>(null);
+  useEffect(() => {
+    let cancelled = false;
+    ensureGoogleMaps()
+      .then(() => {
+        if (cancelled) return;
+        // @ts-ignore - added by leaflet.gridlayer.googlemutant
+        const layer = (L.gridLayer as any).googleMutant({ type: satellite ? 'hybrid' : 'roadmap' }).addTo(map);
+        layerRef.current = layer;
+      })
+      .catch(() => {
+        // fallback handled by TileLayer below if needed
+      });
+    return () => {
+      cancelled = true;
+      if (layerRef.current) {
+        try { map.removeLayer(layerRef.current); } catch {}
+        layerRef.current = null;
+      }
+    };
+  }, [map, satellite]);
+  return null;
+}
 
 export interface Viewport {
   south: number;
@@ -272,10 +310,12 @@ export default function MapCanvas({
       className="h-full w-full"
       attributionControl={false}
     >
-      {satellite ? (
-        <TileLayer url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" attribution="&copy; Google" maxZoom={20} />
+      {GOOGLE_MAPS_API_KEY ? (
+        <GoogleBaseLayer satellite={satellite} />
+      ) : satellite ? (
+        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" maxZoom={20} />
       ) : (
-        <TileLayer url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}" attribution="&copy; Google" maxZoom={20} />
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" maxZoom={20} />
       )}
 
       <ViewportWatcher onChange={(v) => { setZoom(v.zoom); onViewportChange(v); }} />
