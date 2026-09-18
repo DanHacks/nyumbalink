@@ -141,7 +141,7 @@ export default function UniversityDetailPage() {
               onClick={() => setRadiusKm(d.value)}
               className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
                 radiusKm === d.value
-                  ? 'border-teal-700 bg-teal-700 text-white'
+                  ? 'border-primary bg-primary text-white'
                   : 'hover:bg-muted'
               }`}
             >

@@ -71,7 +71,10 @@ async def list_users(
     query = select(User)
 
     if role:
-        query = query.where(User.role == role)
+        try:
+            query = query.where(User.role == UserRole(role))
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid role: {role}")
     if search:
         search_filter = (
             User.first_name.ilike(f"%{search}%")
@@ -81,30 +84,37 @@ async def list_users(
         )
         query = query.where(search_filter)
 
+    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+
     query = query.order_by(User.created_at.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
     users = result.scalars().all()
 
-    return [
-        {
-            "id": u.id,
-            "email": u.email,
-            "phone": u.phone,
-            "first_name": u.first_name,
-            "last_name": u.last_name,
-            "role": u.role.value if hasattr(u.role, 'value') else u.role,
-            "is_active": u.is_active,
-            "is_verified_owner": u.is_verified_owner,
-            "verification_badge": u.verification_badge,
-            "trust_score": u.trust_score,
-            "is_premium": u.is_premium,
-            "created_at": u.created_at,
-            "last_login_at": u.last_login_at,
-        }
-        for u in users
-    ]
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "users": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "phone": u.phone,
+                "first_name": u.first_name,
+                "last_name": u.last_name,
+                "role": u.role.value if hasattr(u.role, 'value') else u.role,
+                "is_active": u.is_active,
+                "is_verified_owner": u.is_verified_owner,
+                "verification_badge": u.verification_badge,
+                "trust_score": u.trust_score,
+                "is_premium": u.is_premium,
+                "created_at": u.created_at,
+                "last_login_at": u.last_login_at,
+            }
+            for u in users
+        ],
+    }
 
 
 @router.put("/users/{user_id}/role")
@@ -123,7 +133,7 @@ async def update_user_role(
     if role not in [r.value for r in UserRole]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
 
-    user.role = role
+    user.role = UserRole(role)
     await record_audit(
         db, current_user.id, "user_role_changed",
         resource_type="user", resource_id=user_id,
@@ -337,9 +347,34 @@ async def get_analytics_overview(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_admin),
 ):
+    users_by_role_rows = (await db.execute(
+        select(User.role, func.count(User.id)).group_by(User.role)
+    )).all()
+    users_by_role = {
+        (r.value if hasattr(r, "value") else (r or "unset")): c
+        for r, c in users_by_role_rows
+    }
+    props_by_status_rows = (await db.execute(
+        select(Property.status, func.count(Property.id))
+        .where(Property.is_archived == False)
+        .group_by(Property.status)
+    )).all()
+    properties_by_status = {
+        (s.value if hasattr(s, "value") else str(s)): c
+        for s, c in props_by_status_rows
+    }
+    revenue = (await db.execute(
+        select(func.coalesce(func.sum(Payment.amount), 0)).where(
+            Payment.status == PaymentStatus.COMPLETED
+        )
+    )).scalar() or 0
+    total_bookings = (await db.execute(select(func.count(Booking.id)))).scalar() or 0
     return {
-        "message": "Analytics overview",
         "period_days": days,
+        "users_by_role": users_by_role,
+        "properties_by_status": properties_by_status,
+        "total_revenue": float(revenue),
+        "total_bookings": total_bookings,
     }
 
 

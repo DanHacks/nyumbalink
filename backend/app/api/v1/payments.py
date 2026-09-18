@@ -140,6 +140,9 @@ async def mpesa_callback(
     mpesa = result.scalar_one_or_none()
 
     if mpesa:
+        # Idempotency: ignore repeat delivery of an already-final callback.
+        if mpesa.result_code is not None and mpesa.raw_callback:
+            return {"ResultCode": 0, "ResultDesc": "Success"}
         mpesa.result_code = str(result_code)
         mpesa.result_description = result_desc
         mpesa.receipt_number = receipt_number
@@ -149,14 +152,19 @@ async def mpesa_callback(
             except ValueError:
                 mpesa.transaction_date = datetime.now(timezone.utc)
         mpesa.phone_number = str(phone_number) if phone_number else mpesa.phone_number
-        mpesa.amount = float(amount) if amount else mpesa.amount
+        if amount:
+            try:
+                if abs(float(amount) - float(mpesa.amount or 0)) > 0.01:
+                    mpesa.amount = float(amount)
+            except (TypeError, ValueError):
+                pass
         mpesa.raw_callback = body
 
+        payment_result = await db.execute(
+            select(Payment).where(Payment.id == mpesa.payment_id)
+        )
+        payment = payment_result.scalar_one_or_none()
         if result_code == 0:
-            payment_result = await db.execute(
-                select(Payment).where(Payment.id == mpesa.payment_id)
-            )
-            payment = payment_result.scalar_one_or_none()
             if payment:
                 payment.status = PaymentStatus.COMPLETED
                 payment.paid_at = datetime.now(timezone.utc)
@@ -183,10 +191,47 @@ async def mpesa_callback(
                         if user:
                             user.is_premium = True
                             user.premium_expires_at = subscription.expires_at
+        else:
+            if payment and payment.status == PaymentStatus.PENDING:
+                payment.status = PaymentStatus.FAILED
+                await record_audit(
+                    db, payment.user_id, "payment_failed",
+                    resource_type="payment", resource_id=payment.id,
+                    details={"result_code": result_code, "result_desc": result_desc},
+                )
 
         await db.flush()
 
     return {"ResultCode": 0, "ResultDesc": "Success"}
+
+
+@router.get("/mpesa/status/{payment_id}")
+async def mpesa_payment_status(
+    payment_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Payment).where(
+            Payment.id == payment_id,
+            Payment.user_id == current_user.id,
+        )
+    )
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
+    txn_result = await db.execute(
+        select(MpesaTransaction).where(MpesaTransaction.payment_id == payment_id)
+    )
+    txn = txn_result.scalar_one_or_none()
+    return {
+        "payment_id": payment.id,
+        "status": payment.status.value if hasattr(payment.status, "value") else payment.status,
+        "amount": payment.amount,
+        "paid_at": payment.paid_at,
+        "receipt_number": txn.receipt_number if txn else None,
+        "checkout_request_id": txn.checkout_request_id if txn else None,
+    }
 
 
 @router.get("/history")
@@ -262,10 +307,25 @@ async def subscribe_premium(
     await db.flush()
 
     if phone:
-        return await mpesa_stk_push(
+        orphan_payment_id = payment.id
+        stk = await mpesa_stk_push(
             amount=amount, phone=phone, payment_type="premium_subscription",
             description=f"NyumbaLink {plan_type} plan", db=db, current_user=current_user,
         )
+        # Link the pending subscription to the real STK payment (STK creates its own Payment row).
+        subscription.payment_id = stk["payment_id"]
+        # Remove the placeholder payment created above to avoid orphans.
+        orphan = await db.get(Payment, orphan_payment_id)
+        if orphan is not None:
+            await db.delete(orphan)
+        await db.flush()
+        return {
+            "subscription_id": subscription.id,
+            "payment_id": stk["payment_id"],
+            "message": stk["message"],
+            "checkout_request_id": stk.get("checkout_request_id"),
+            "demo_mode": stk.get("demo_mode"),
+        }
 
     return {
         "subscription_id": subscription.id,

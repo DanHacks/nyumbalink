@@ -6,7 +6,7 @@ const CATEGORIES = [
     title: 'Finding a home',
     links: [
       { label: 'Search and filters', to: '/search' },
-      { label: 'Map view', to: '/map' },
+      { label: 'Map view', to: '/explore?view=map' },
       { label: 'Saved properties', to: '/saved' },
     ],
   },

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
+import { displayName } from '@/lib/types';
 import { COLORS, ROLE_LABELS } from '@/lib/theme';
 import VerifiedBadge from '@/components/VerifiedBadge';
 
@@ -31,7 +32,8 @@ export default function ProfileScreen() {
       </View>
     );
   }
-  const initials = (user?.full_name || user?.email || '?')
+  const name = displayName(user);
+  const initials = (name || user?.email || '?')
     .split(' ')
     .map((s) => s[0])
     .slice(0, 2)
@@ -43,7 +45,7 @@ export default function ProfileScreen() {
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{initials}</Text>
       </View>
-      <Text style={styles.name}>{user?.full_name || 'NyumbaLink user'}</Text>
+      <Text style={styles.name}>{name}</Text>
       <Text style={styles.email}>{user?.email}</Text>
       <View style={styles.roleBadge}>
         <Text style={styles.roleText}>{user?.role ? ROLE_LABELS[user.role] : 'No role'}</Text>
@@ -51,7 +53,7 @@ export default function ProfileScreen() {
       <VerifiedBadge level={user?.is_identity_verified ? 'gold' : 'basic'} />
 
       <View style={styles.section}>
-        <Row label="Account" value={user?.is_active ? 'Active' : 'Inactive'} />
+        <Row label="Account" value={user?.is_active === false ? 'Inactive' : 'Active'} />
         <Row label="Identity" value={user?.is_identity_verified ? 'Verified' : 'Not verified'} />
         <Row label="Trust score" value={String(user?.trust_score ?? '—')} />
       </View>

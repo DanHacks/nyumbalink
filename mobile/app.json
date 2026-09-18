@@ -20,7 +20,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID",
+      "enabled": false,
       "fallbackToCacheTimeout": 0
     },
     "ios": {

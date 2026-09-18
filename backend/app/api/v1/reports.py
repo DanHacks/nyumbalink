@@ -119,9 +119,15 @@ async def create_property_report(
     )
     if request.visited_at:
         try:
-            report.visited_at = datetime.fromisoformat(request.visited_at)
-        except ValueError:
-            pass
+            parsed = datetime.fromisoformat(str(request.visited_at).replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            report.visited_at = parsed
+        except (ValueError, TypeError):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="visited_at must be a valid ISO datetime",
+            )
     db.add(report)
     await db.flush()
 

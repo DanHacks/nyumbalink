@@ -103,6 +103,21 @@ async def add_favorite(
     return {"message": "Added to favorites"}
 
 
+@router.get("/{property_id}/status")
+async def favorite_status(
+    property_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    existing = await db.execute(
+        select(Favorite).where(
+            Favorite.user_id == current_user.id,
+            Favorite.property_id == property_id,
+        )
+    )
+    return {"property_id": property_id, "is_favorite": existing.scalar_one_or_none() is not None}
+
+
 @router.delete("/{property_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_favorite(
     property_id: str,

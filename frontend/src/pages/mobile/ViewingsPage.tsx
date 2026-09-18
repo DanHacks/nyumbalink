@@ -14,9 +14,9 @@ export interface ViewingRequest {
 
 export const STATUS_STYLE: Record<ViewingRequest['status'], string> = {
   REQUESTED: 'bg-slate-100 text-slate-700',
-  CONFIRMED: 'bg-teal-50 text-teal-700',
-  ON_THE_WAY: 'bg-sky-50 text-sky-700',
-  ARRIVED: 'bg-indigo-50 text-indigo-700',
+  CONFIRMED: 'bg-orange-100 text-orange-800',
+  ON_THE_WAY: 'bg-blue-100 text-blue-900',
+  ARRIVED: 'bg-amber-100 text-amber-800',
   IN_PROGRESS: 'bg-amber-50 text-amber-800',
   COMPLETED: 'bg-emerald-50 text-emerald-700',
   CANCELLED: 'bg-rose-50 text-rose-700',
@@ -37,7 +37,7 @@ export default function ViewingsPage() {
           <CalendarCheck className="mx-auto mb-2 h-6 w-6 text-slate-400" aria-hidden />
           <p className="font-semibold text-slate-800">No viewings booked</p>
           <p className="mt-1 text-sm text-slate-500">Open a property and request a time with the verified caretaker.</p>
-          <Link to="/" className="mt-4 inline-block rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+          <Link to="/" className="mt-4 inline-block rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary/90">
             Find a property
           </Link>
         </div>
@@ -63,7 +63,7 @@ export default function ViewingsPage() {
             <div className="mt-3 flex gap-2">
               <Link
                 to={`/properties/${v.propertyId}`}
-                className="flex-1 rounded-xl bg-slate-900 py-2 text-center text-sm font-semibold text-white"
+                className="flex-1 rounded-xl bg-secondary py-2 text-center text-sm font-semibold text-white hover:bg-secondary/90"
               >
                 View property
               </Link>

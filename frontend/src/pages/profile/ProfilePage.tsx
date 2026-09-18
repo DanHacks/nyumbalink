@@ -1,10 +1,14 @@
 import { useAuthStore } from '@/store/authStore';
-import { Shield, Mail, Phone, User as UserIcon, Star, Award } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Shield, Mail, Phone, User as UserIcon, Star, Award, LogOut } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   if (!user) return null;
+
+  const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}` || 'N';
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -15,7 +19,7 @@ export default function ProfilePage() {
             <div className="h-24 w-24 rounded-full bg-white p-1">
               <div className="h-full w-full rounded-full bg-primary/10 flex items-center justify-center">
                 <span className="text-2xl font-bold text-primary">
-                  {user.first_name[0]}{user.last_name[0]}
+                  {initials}
                 </span>
               </div>
             </div>
@@ -65,8 +69,25 @@ export default function ProfilePage() {
             )}
             <div className="flex items-center text-sm">
               <UserIcon className="h-4 w-4 mr-3 text-gray-400" />
-              Member since {new Date(user.created_at).toLocaleDateString()}
+              Member since {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
             </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {!user.is_premium && (
+              <Link to="/pricing" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold">
+                Go Premium
+              </Link>
+            )}
+            <button
+              onClick={async () => {
+                await logout();
+                navigate('/');
+              }}
+              className="inline-flex items-center px-4 py-2 border rounded-lg text-sm font-semibold text-red-600"
+            >
+              <LogOut className="h-4 w-4 mr-2" /> Log out
+            </button>
           </div>
         </div>
       </div>

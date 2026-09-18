@@ -39,8 +39,9 @@ export interface TokenResponse {
 export interface RegisterPayload {
   email: string;
   password: string;
-  full_name: string;
-  phone?: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
   role?: string;
 }
 
@@ -65,12 +66,19 @@ export async function fetchMe(): Promise<any> {
   return res.data;
 }
 
-export async function logout(): Promise<void> {
+export async function logout(refreshToken?: string | null): Promise<void> {
   try {
-    await api.post('/auth/logout');
+    if (refreshToken) {
+      await api.post('/auth/logout', { refresh_token: refreshToken });
+    }
   } catch {
     /* ignore */
   }
+}
+
+export async function refreshTokens(refreshToken: string): Promise<TokenResponse> {
+  const res = await api.post<TokenResponse>('/auth/refresh', { refresh_token: refreshToken });
+  return res.data;
 }
 
 /* ---------------- Map / Properties ---------------- */
@@ -103,20 +111,20 @@ export async function searchAutocomplete(q: string): Promise<any[]> {
 export async function geocode(q: string): Promise<{ lat: number; lng: number; label?: string } | null> {
   const res = await api.get('/maps/geocode', { params: { q } });
   const data = res.data;
-  if (!data || data.lat == null) return null;
-  return { lat: data.lat, lng: data.lng, label: data.label };
+  if (!data || !data.found) return null;
+  if (data.latitude == null || data.longitude == null) return null;
+  return { lat: data.latitude, lng: data.longitude, label: data.name };
 }
 
 export async function getDirections(
+  propertyId: string,
   from: { lat: number; lng: number },
-  to: { lat: number; lng: number },
 ): Promise<any> {
   const res = await api.get('/maps/directions', {
     params: {
-      from_lat: from.lat,
-      from_lng: from.lng,
-      to_lat: to.lat,
-      to_lng: to.lng,
+      property_id: propertyId,
+      origin_lat: from.lat,
+      origin_lon: from.lng,
     },
   });
   return res.data;
@@ -145,7 +153,11 @@ export async function createReview(
   propertyId: string,
   payload: { rating: number; comment?: string; positive_factors?: string[] },
 ): Promise<any> {
-  const res = await api.post(`/reviews/property/${propertyId}`, payload);
+  const res = await api.post(`/reviews/property/${propertyId}`, {
+    overall_rating: payload.rating,
+    comment: payload.comment || '',
+    categories: { positive_factors: payload.positive_factors || [] },
+  });
   return res.data;
 }
 
@@ -190,16 +202,16 @@ export async function addFavorite(propertyId: string): Promise<void> {
 /* ---------------- Chat ---------------- */
 export async function getConversations(): Promise<any[]> {
   const res = await api.get('/chat/conversations');
-  return res.data ?? [];
+  return res.data?.conversations ?? [];
 }
 
 export async function getMessages(conversationId: string): Promise<any[]> {
   const res = await api.get(`/chat/conversations/${conversationId}/messages`);
-  return res.data ?? [];
+  return res.data?.messages ?? [];
 }
 
 export async function sendMessage(conversationId: string, body: string): Promise<any> {
-  const res = await api.post(`/chat/conversations/${conversationId}/messages`, { body });
+  const res = await api.post(`/chat/conversations/${conversationId}/messages`, { content: body });
   return res.data;
 }
 

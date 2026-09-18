@@ -11,6 +11,12 @@ export default function BookScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [date, setDate] = useState('');
+  const [start, setStart] = useState('09:00');
+  const [end, setEnd] = useState('09:30');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
 
   if (!user) {
     return (
@@ -27,12 +33,6 @@ export default function BookScreen() {
       </View>
     );
   }
-  const [start, setStart] = useState('09:00');
-  const [end, setEnd] = useState('09:30');
-  const [notes, setNotes] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
 
   const submit = async () => {
     setError('');
@@ -47,10 +47,10 @@ export default function BookScreen() {
     setBusy(true);
     try {
       await createBooking({
-        property_id: id,
-        scheduled_date: date,
-        scheduled_time_start: `1970-01-01T${start}:00`,
-        scheduled_time_end: `1970-01-01T${end}:00`,
+        property_id: id as string,
+        scheduled_date: `${date}T${start}:00`,
+        scheduled_time_start: `${date}T${start}:00`,
+        scheduled_time_end: `${date}T${end}:00`,
         tenant_notes: notes.trim() || undefined,
       });
       setDone(true);

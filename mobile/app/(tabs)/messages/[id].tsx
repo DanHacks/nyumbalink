@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'r
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LoadingState, ErrorState } from '@/components/States';
 import { getMessages, sendMessage } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { COLORS } from '@/lib/theme';
 
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,7 +17,7 @@ export default function ConversationScreen() {
   const load = async () => {
     setLoading(true);
     try {
-      setMessages(await getMessages(id));
+      setMessages(await getMessages(id as string));
     } catch {
       setError('Could not load messages.');
     } finally {
@@ -30,7 +32,7 @@ export default function ConversationScreen() {
   const send = async () => {
     if (!draft.trim()) return;
     try {
-      await sendMessage(id, draft.trim());
+      await sendMessage(id as string, draft.trim());
       setDraft('');
       await load();
     } catch {
@@ -48,11 +50,15 @@ export default function ConversationScreen() {
         data={messages}
         keyExtractor={(m) => m.id ?? String(Math.random())}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <View style={[styles.bubble, item.from_me ? styles.mine : styles.theirs]}>
-            <Text style={item.from_me ? styles.mineText : styles.theirText}>{item.body}</Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const mine = user ? item.sender_id === user.id : !!item.from_me;
+          const body = item.content ?? item.body ?? '';
+          return (
+            <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
+              <Text style={mine ? styles.mineText : styles.theirText}>{body}</Text>
+            </View>
+          );
+        }}
       />
       <View style={styles.composer}>
         <TextInput

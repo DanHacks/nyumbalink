@@ -30,18 +30,10 @@ function regionToBounds(r: { latitude: number; longitude: number; latitudeDelta:
 
 function filtersToParams(f: PropertyFilters) {
   const p: Record<string, any> = {};
-  if (f.price_max != null) p.price_max = f.price_max;
-  if (f.price_min != null) p.price_min = f.price_min;
+  if (f.price_max != null) p.max_price = f.price_max;
+  if (f.price_min != null) p.min_price = f.price_min;
   if (f.property_type) p.property_type = f.property_type;
-  if (f.rooms != null) p.rooms = f.rooms;
   if (f.verified_only) p.verified_only = true;
-  if (f.student) p.student = true;
-  if (f.gender) p.gender = f.gender;
-  if (f.furnished) p.furnished = true;
-  if (f.wifi) p.wifi = true;
-  if (f.water) p.water = true;
-  if (f.parking) p.parking = true;
-  if (f.security) p.security = true;
   return p;
 }
 
@@ -175,6 +167,9 @@ export default function HomeScreen() {
       {offline && !mapError ? (
         <View style={[styles.banner, styles.offlineBanner]}>
           <Text style={styles.bannerText}>You appear to be offline.</Text>
+          <TouchableOpacity onPress={() => router.push('/explore' as any)}>
+            <Text style={[styles.bannerText, { color: COLORS.primary, marginTop: 4 }]}>Search properties using list view →</Text>
+          </TouchableOpacity>
         </View>
       ) : null}
 

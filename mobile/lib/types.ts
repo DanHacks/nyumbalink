@@ -9,13 +9,26 @@ export type UserRole =
 export interface User {
   id: string;
   email: string;
-  full_name: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
   phone?: string;
   role: UserRole | null;
   is_active?: boolean;
+  is_email_verified?: boolean;
+  is_phone_verified?: boolean;
   is_identity_verified?: boolean;
+  is_verified_owner?: boolean;
   trust_score?: number;
   profile_image_url?: string;
+  avatar_url?: string;
+}
+
+export function displayName(user: Pick<User, 'full_name' | 'first_name' | 'last_name' | 'email'> | null | undefined): string {
+  if (!user) return 'NyumbaLink user';
+  if (user.full_name) return user.full_name;
+  const combined = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+  return combined || user.email || 'NyumbaLink user';
 }
 
 export type PropertyKind =

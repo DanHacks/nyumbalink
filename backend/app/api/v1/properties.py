@@ -112,6 +112,8 @@ async def list_properties(
     county: Optional[str] = None,
     city: Optional[str] = None,
     verified_only: bool = False,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
     lat: Optional[float] = None,
     lon: Optional[float] = None,
     radius_km: Optional[float] = None,
@@ -133,6 +135,10 @@ async def list_properties(
         query = query.where(Property.city.ilike(f"%{city}%"))
     if verified_only:
         query = query.where(Property.has_verified_photos == True)
+    if min_price is not None:
+        query = query.where(Property.max_rent >= min_price)
+    if max_price is not None:
+        query = query.where(Property.min_rent <= max_price)
 
     if lat is not None and lon is not None and radius_km:
         point = func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
@@ -588,7 +594,9 @@ async def update_room(
     current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Room).where(Room.id == room_id)
+        select(Room).where(Room.id == room_id).options(
+            selectinload(Room.building), selectinload(Room.floor),
+        )
     )
     room = result.scalar_one_or_none()
     if not room:
@@ -603,13 +611,38 @@ async def update_room(
     if request.negotiable is not None:
         room.negotiable = request.negotiable
     if request.occupancy_status is not None:
-        room.occupancy_status = request.occupancy_status
+        try:
+            room.occupancy_status = OccupancyStatus(request.occupancy_status)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid occupancy status: {request.occupancy_status}",
+            )
     if request.furnishing is not None:
         room.furnishing = request.furnishing
 
     await db.flush()
     await _recount_vacancy(db, room.property_id)
-    return room
+    return RoomResponse(
+        id=room.id,
+        room_number=room.room_number,
+        room_name=room.room_name,
+        house_type=room.house_type.value if hasattr(room.house_type, "value") else room.house_type,
+        rent_amount=room.rent_amount,
+        deposit_amount=room.deposit_amount,
+        currency=room.currency,
+        occupancy_status=room.occupancy_status.value if hasattr(room.occupancy_status, "value") else room.occupancy_status,
+        furnishing=room.furnishing,
+        size_sqm=room.size_sqm,
+        water_available=room.water_available,
+        electricity_available=room.electricity_available,
+        internet_available=room.internet_available,
+        parking_available=room.parking_available,
+        pet_friendly=room.pet_friendly,
+        student_friendly=room.student_friendly,
+        building_name=room.building.building_name if room.building else None,
+        floor_number=room.floor.floor_number if room.floor else None,
+    )
 
 
 async def _recount_vacancy(db: AsyncSession, property_id: str):

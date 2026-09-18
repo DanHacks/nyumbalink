@@ -75,7 +75,7 @@ function clusterIcon(count: number) {
   const size = count > 99 ? 62 : count > 24 ? 54 : 46;
   return L.divIcon({
     className: '',
-    html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:rgba(5,150,105,.95);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 8px 20px rgba(4,120,87,.35);font-weight:800;line-height:1">
+    html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:rgba(234,88,12,.95);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 8px 20px rgba(194,65,12,.35);font-weight:800;line-height:1">
       <span style="font-size:${size > 50 ? 16 : 14}px">${count}</span>
       <span style="font-size:8px;letter-spacing:.08em;opacity:.85">HOMES</span>
     </div>`,
@@ -86,11 +86,11 @@ function clusterIcon(count: number) {
 
 function priceIcon(p: MapProperty, active: boolean) {
   const price = p.price >= 1000 ? `${Math.round(p.price / 1000)}K` : `${p.price}`;
-  const bg = active ? '#0f766e' : p.safety === 'active' ? '#ffffff' : '#fef2f2';
+  const bg = active ? '#ea580c' : p.safety === 'active' ? '#ffffff' : '#fef2f2';
   const fg = active ? '#ffffff' : '#0f172a';
   return L.divIcon({
     className: '',
-    html: `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9999px;background:${bg};color:${fg};border:1.5px solid ${active ? '#0f766e' : 'rgba(15,23,42,.12)'};box-shadow:0 6px 16px rgba(15,23,42,.18);font-weight:700;font-size:12px;white-space:nowrap">
+    html: `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9999px;background:${bg};color:${fg};border:1.5px solid ${active ? '#ea580c' : 'rgba(15,23,42,.12)'};box-shadow:0 6px 16px rgba(15,23,42,.18);font-weight:700;font-size:12px;white-space:nowrap">
       <span style="font-size:13px">${KIND_EMOJI[p.kind]}</span>
       <span>${price}</span>
       ${p.availableUnits > 0 ? '<span style="width:7px;height:7px;border-radius:9999px;background:#22c55e"></span>' : ''}
@@ -356,7 +356,7 @@ export default function MapCanvas({
               key={`halo-${p.id}`}
               center={[p.lat, p.lng]}
               radius={320}
-              pathOptions={{ color: '#0f766e', fillColor: '#0f766e', fillOpacity: 0.12, weight: 1 }}
+               pathOptions={{ color: '#ea580c', fillColor: '#ea580c', fillOpacity: 0.12, weight: 1 }}
             />
           ))}
     </MapContainer>

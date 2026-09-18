@@ -27,6 +27,27 @@ export default function BookingsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const load = async () => {
+    if (!user) return;
+    setLoading(true);
+    setError('');
+    try {
+      setBookings(await getMyBookings());
+    } catch {
+      setError('Could not load your bookings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      load();
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
   if (!user) {
     return (
       <View style={styles.flex}>
@@ -45,22 +66,6 @@ export default function BookingsScreen() {
     );
   }
 
-  const load = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      setBookings(await getMyBookings());
-    } catch {
-      setError('Could not load your bookings.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
   if (loading) return <LoadingState message="Loading bookings…" />;
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (bookings.length === 0)
@@ -70,6 +75,14 @@ export default function BookingsScreen() {
         <EmptyState message="No bookings yet. Tap a property to book a viewing." />
       </View>
     );
+
+function formatTime(value: any): string {
+  if (!value) return '';
+  const s = String(value);
+  const m = s.match(/T(\d{2}:\d{2})/);
+  if (m) return m[1];
+  return s.slice(0, 5);
+}
 
   return (
     <View style={styles.flex}>
@@ -82,15 +95,14 @@ export default function BookingsScreen() {
             onPress={() => router.push(`/property/${b.property_id}`)}
           >
             <View style={styles.row}>
-              <Text style={styles.title}>{b.property?.property_name ?? 'Property'}</Text>
+              <Text style={styles.title}>{b.property_name ?? b.property?.property_name ?? 'Property'}</Text>
               <View style={[styles.badge, { backgroundColor: statusColor(b.status) }]}>
                 <Text style={styles.badgeText}>{b.status}</Text>
               </View>
             </View>
             <Text style={styles.sub}>
-              {formatDate(b.scheduled_date)} · {b.scheduled_time_start?.slice(11, 16)}–{b.scheduled_time_end?.slice(11, 16)}
+              {formatDate(b.scheduled_date)} · {formatTime(b.scheduled_time_start)}–{formatTime(b.scheduled_time_end)}
             </Text>
-            {b.property?.city ? <Text style={styles.sub}>{b.property.city}</Text> : null}
           </TouchableOpacity>
         ))}
       </ScrollView>

@@ -174,6 +174,17 @@ async def create_booking(
         details={"property_id": request.property_id},
     )
     await db.flush()
+    result = await db.execute(
+        select(Booking).where(Booking.id == booking.id).options(
+            selectinload(Booking.property), selectinload(Booking.room), selectinload(Booking.tenant),
+        )
+    )
+    booking = result.scalar_one()
+    try:
+        from app.tasks.notifications import send_booking_confirmation
+        send_booking_confirmation.delay(booking.id)
+    except Exception:
+        pass
     return _serialize(booking)
 
 
@@ -190,7 +201,13 @@ async def get_my_bookings(
     ).options(selectinload(Booking.property), selectinload(Booking.room), selectinload(Booking.tenant))
 
     if status_filter:
-        query = query.where(Booking.status == status_filter)
+        try:
+            query = query.where(Booking.status == BookingStatus(status_filter))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid booking status: {status_filter}",
+            )
 
     query = query.order_by(Booking.created_at.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
@@ -212,7 +229,13 @@ async def get_my_property_bookings(
     ).options(selectinload(Booking.property), selectinload(Booking.room), selectinload(Booking.tenant))
 
     if status_filter:
-        query = query.where(Booking.status == status_filter)
+        try:
+            query = query.where(Booking.status == BookingStatus(status_filter))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid booking status: {status_filter}",
+            )
 
     query = query.order_by(Booking.created_at.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
@@ -307,6 +330,11 @@ async def check_in_booking(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if request.booking_id and request.booking_id != booking_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="booking_id in path and body must match",
+        )
     result = await db.execute(
         select(Booking).where(Booking.id == booking_id).options(
             selectinload(Booking.property), selectinload(Booking.check_ins),

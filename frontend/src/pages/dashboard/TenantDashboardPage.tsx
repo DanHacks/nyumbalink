@@ -11,7 +11,7 @@ import EmptyState from '@/components/EmptyState';
 
 const QUICK_ACTIONS = [
   { label: 'Find a home', to: '/search', icon: Search },
-  { label: 'Open map', to: '/map', icon: MapPin },
+  { label: 'Open map', to: '/explore?view=map', icon: MapPin },
   { label: 'My bookings', to: '/bookings', icon: CalendarCheck },
   { label: 'Saved homes', to: '/saved', icon: Heart },
 ];
@@ -111,7 +111,7 @@ export default function TenantDashboardPage() {
               <p className="text-xs text-muted-foreground">Saved homes</p>
             </div>
             <div className="rounded-xl border bg-card p-4 text-center">
-              <CalendarCheck className="mx-auto h-5 w-5 text-teal-700" />
+              <CalendarCheck className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 text-2xl font-extrabold">{bookings.length}</p>
               <p className="text-xs text-muted-foreground">Total bookings</p>
             </div>
@@ -123,7 +123,7 @@ export default function TenantDashboardPage() {
               <li><Link to="/messages" className="flex items-center gap-2 hover:text-primary"><MessageSquare className="h-4 w-4" /> Messages</Link></li>
               <li><Link to="/notifications" className="flex items-center gap-2 hover:text-primary"><Bell className="h-4 w-4" /> Notifications</Link></li>
               <li><Link to="/universities" className="flex items-center gap-2 hover:text-primary"><Compass className="h-4 w-4" /> Student accommodation</Link></li>
-              <li><Link to="/map" className="flex items-center gap-2 hover:text-primary"><Home className="h-4 w-4" /> Explore the map</Link></li>
+              <li><Link to="/explore?view=map" className="flex items-center gap-2 hover:text-primary"><Home className="h-4 w-4" /> Explore the map</Link></li>
             </ul>
           </div>
         </section>
@@ -141,7 +141,7 @@ export default function TenantDashboardPage() {
               title="No properties available yet"
               message="Verified listings will appear here as owners publish them."
               action={
-                <Link to="/map" className="rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground">
+                <Link to="/explore?view=map" className="rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground">
                   Open the map
                 </Link>
               }

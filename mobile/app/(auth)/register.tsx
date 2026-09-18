@@ -22,7 +22,8 @@ const ROLES: UserRole[] = ['student', 'tenant', 'owner', 'agent'];
 export default function RegisterScreen() {
   const { register } = useAuth();
   const [role, setRole] = useState<UserRole | null>(null);
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -35,17 +36,18 @@ export default function RegisterScreen() {
       setError('Choose how you will use NyumbaLink.');
       return;
     }
-    if (!fullName || !email || !password) {
-      setError('Name, email and password are required.');
+    if (!firstName.trim() || !lastName.trim() || !email || !phone.trim() || !password) {
+      setError('First name, last name, email, phone and password are required.');
       return;
     }
     setBusy(true);
     try {
       await register({
-        full_name: fullName,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         email: email.trim().toLowerCase(),
         password,
-        phone: phone || undefined,
+        phone: phone.trim(),
         role,
       });
     } catch (e: any) {
@@ -78,9 +80,10 @@ export default function RegisterScreen() {
 
         {error ? <ErrorState message={error} /> : null}
 
-        <TextInput style={styles.input} placeholder="Full name" value={fullName} onChangeText={setFullName} placeholderTextColor={COLORS.muted} />
+        <TextInput style={styles.input} placeholder="First name" value={firstName} onChangeText={setFirstName} placeholderTextColor={COLORS.muted} />
+        <TextInput style={styles.input} placeholder="Last name" value={lastName} onChangeText={setLastName} placeholderTextColor={COLORS.muted} />
         <TextInput style={styles.input} placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} placeholderTextColor={COLORS.muted} />
-        <TextInput style={styles.input} placeholder="Phone (optional)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} placeholderTextColor={COLORS.muted} />
+        <TextInput style={styles.input} placeholder="Phone (e.g. +2547...)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} placeholderTextColor={COLORS.muted} />
         <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} placeholderTextColor={COLORS.muted} />
 
         <TouchableOpacity style={styles.primary} onPress={submit} disabled={busy}>

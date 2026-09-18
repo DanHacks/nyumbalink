@@ -46,7 +46,7 @@ function Chip({ active, children, onClick }: { active: boolean; children: React.
       onClick={onClick}
       className={cn(
         'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
-        active ? 'border-teal-600 bg-teal-600 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
+        active ? 'border-primary bg-primary text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
       )}
     >
       {children}
@@ -112,7 +112,7 @@ export default function FilterSheet({
               placeholder="Min"
               value={filters.minPrice ?? ''}
               onChange={(e) => onChange({ ...filters, minPrice: e.target.value ? Number(e.target.value) : null })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-500"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary"
             />
             <span className="text-slate-400">—</span>
             <input
@@ -120,7 +120,7 @@ export default function FilterSheet({
               placeholder="Max"
               value={filters.maxPrice ?? ''}
               onChange={(e) => onChange({ ...filters, maxPrice: e.target.value ? Number(e.target.value) : null })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-500"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function FilterSheet({
           <button onClick={() => onChange(emptyFilters)} className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">
             Reset
           </button>
-          <button onClick={onClose} className="flex-1 rounded-xl bg-teal-600 px-4 py-3 text-sm font-bold text-white hover:bg-teal-700">
+          <button onClick={onClose} className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90">
             Show {resultCount} homes
           </button>
         </div>

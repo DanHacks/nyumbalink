@@ -103,9 +103,9 @@ class UserResponse(BaseModel):
     id: str
     email: str
     phone: Optional[str]
-    first_name: str
-    last_name: str
-    role: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: Optional[str] = None
     is_email_verified: bool
     is_phone_verified: bool
     is_verified_owner: bool

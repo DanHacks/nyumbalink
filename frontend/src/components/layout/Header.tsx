@@ -60,8 +60,8 @@ export default function Header() {
             <Link to="/properties" className="text-sm font-medium hover:text-primary">
               Find a Home
             </Link>
-            <Link to="/map" className="text-sm font-medium hover:text-primary">
-              Map
+            <Link to="/explore" className="text-sm font-medium hover:text-primary">
+              Explore
             </Link>
             <Link to="/hostels" className="text-sm font-medium hover:text-primary">
               Hostels
@@ -205,11 +205,11 @@ export default function Header() {
               Find a Home
             </Link>
             <Link
-              to="/map"
+              to="/explore?view=map"
               className="block py-2 text-sm font-medium"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Map
+              Explore
             </Link>
             <Link
               to="/universities"

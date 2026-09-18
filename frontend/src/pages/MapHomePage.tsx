@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, SlidersHorizontal, Locate, Layers, Compass, ShieldCheck,
   RefreshCw, GitCompare, X, Loader2, MapPinOff, Navigation, Plus, Minus,
@@ -51,10 +51,12 @@ function viewportAround(c: [number, number]): Viewport {
 }
 
 export default function MapHomePage() {
+  const [urlParams] = useSearchParams();
+  const navigate = useNavigate();
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const [pendingViewport, setPendingViewport] = useState<Viewport | null>(null);
-  const [query, setQuery] = useState('');
-  const [submitted, setSubmitted] = useState('');
+  const [query, setQuery] = useState(urlParams.get('q') ?? '');
+  const [submitted, setSubmitted] = useState(urlParams.get('q') ?? '');
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<MapProperty | null>(null);
@@ -111,11 +113,20 @@ export default function MapHomePage() {
       (pos) => {
         const c: [number, number] = [pos.coords.latitude, pos.coords.longitude];
         setUserLocation(c); setFlyTarget(c); setMode('near'); setLocationError(null);
+        setViewport(viewportAround(c));
       },
       () => setLocationError('Location access is optional. Search manually or choose an area.'),
       { enableHighAccuracy: true, timeout: 8000 },
     );
   }
+
+  // Uber-style: center on the tenant as soon as the screen opens —
+  // unless they arrived with a destination query (?q=), which wins.
+  useEffect(() => {
+    if (urlParams.get('q')) return;
+    locate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Smoothly animate the map back to north-up (Google-Maps-style compass reset). */
   function resetNorth() {
@@ -168,7 +179,7 @@ export default function MapHomePage() {
           .join(' ').toLowerCase().includes(parsed.place ? parsed.place.toLowerCase() : q) ||
         [p.name, p.estate, p.town, p.houseType].join(' ').toLowerCase().includes(q),
       );
-      if (parsed.houseType) list = all.filter((p) => p.houseType === parsed.houseType && p.safety !== 'blacklisted');
+      if (parsed.houseType) list = list.filter((p) => p.houseType === parsed.houseType && p.safety !== 'blacklisted');
       if (parsed.maxPrice) list = list.filter((p) => p.price <= parsed.maxPrice!);
       if (parsed.minPrice) list = list.filter((p) => p.price >= parsed.minPrice!);
       if (parsed.services.length) list = list.filter((p) => parsed.services.every((s) => p.services.includes(s)));
@@ -204,8 +215,35 @@ export default function MapHomePage() {
     );
   }, [results, viewport]);
 
-  const listed = inViewport.length ? inViewport : results;
   const origin = userLocation ?? viewport?.center ?? null;
+  // Uber sorts cars by pickup time — we sort houses by distance from the tenant.
+  const listed = useMemo(() => {
+    const base = inViewport.length ? inViewport : results;
+    if (!origin) return base;
+    return [...base].sort(
+      (a, b) => distanceKm(origin, [a.lat, a.lng]) - distanceKm(origin, [b.lat, b.lng]),
+    );
+  }, [inViewport, results, origin]);
+
+  // Uber-style option rail: house types act like vehicle classes —
+  // each shows live availability count + entry price from current results.
+  const typeOptions = useMemo(() => {
+    const groups = new Map<string, { count: number; min: number }>();
+    for (const p of all.filter((x) => x.safety !== 'blacklisted')) {
+      const g = groups.get(p.houseType) ?? { count: 0, min: Infinity };
+      g.count += 1;
+      g.min = Math.min(g.min, p.price);
+      groups.set(p.houseType, g);
+    }
+    return [...groups.entries()]
+      .map(([type, g]) => ({ type, count: g.count, min: g.min }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [all]);
+
+  const activeType = filters.houseTypes.length === 1 ? filters.houseTypes[0] : null;
+  const toggleType = (t: string) =>
+    setFilters((f) => ({ ...f, houseTypes: activeType === t ? [] : [t] }));
 
   const summary = useMemo(() => {
     const groups = new Map<string, number>();
@@ -249,7 +287,7 @@ export default function MapHomePage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[1000] p-3 lg:right-[min(40%,460px)]">
         <div className="pointer-events-auto mx-auto w-full max-w-2xl space-y-2">
           <div className="flex items-center gap-2 rounded-2xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur">
-            <Link to="/welcome" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-teal-600 text-sm font-black text-white">
+            <Link to="/welcome" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-black text-white shadow-sm">
               NL
             </Link>
             <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -275,7 +313,7 @@ export default function MapHomePage() {
             >
               <SlidersHorizontal className="h-4 w-4" />
               {activeFilterCount > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-teal-600 px-1 text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
                   {activeFilterCount}
                 </span>
               )}
@@ -289,7 +327,7 @@ export default function MapHomePage() {
                 onClick={() => { setMode(m.id); if (m.id === 'near') locate(); }}
                 className={cn(
                   'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm backdrop-blur',
-                  mode === m.id ? 'border-teal-600 bg-teal-600 text-white' : 'border-black/5 bg-white/95 text-slate-700',
+                  mode === m.id ? 'border-primary bg-primary text-white' : 'border-black/5 bg-white/95 text-slate-700',
                 )}
               >
                 {m.label}
@@ -306,6 +344,36 @@ export default function MapHomePage() {
             ))}
           </div>
 
+          {/* House-type rail — the "choose your ride" row: vehicles → houses */}
+          {typeOptions.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+              {typeOptions.map((t) => {
+                const active = activeType === t.type;
+                return (
+                  <button
+                    key={t.type}
+                    onClick={() => toggleType(t.type)}
+                    aria-pressed={active}
+                    className={cn(
+                      'flex shrink-0 items-center gap-2.5 rounded-2xl border px-3 py-2 text-left shadow-sm backdrop-blur transition active:scale-95',
+                      active ? 'border-primary bg-secondary text-white' : 'border-black/5 bg-white/95 text-slate-800 hover:border-primary/40',
+                    )}
+                  >
+                    <span className={cn('grid h-9 w-9 place-items-center rounded-xl text-base', active ? 'bg-white/15' : 'bg-orange-100')}>
+                      🏠
+                    </span>
+                    <span>
+                      <span className="block text-xs font-bold capitalize leading-tight">{t.type.replace(/_/g, ' ')}</span>
+                      <span className={cn('block text-[11px] leading-tight', active ? 'text-slate-300' : 'text-slate-500')}>
+                        {t.count} near you • from {formatCurrency(t.min)}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {locationError && (
             <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 shadow-sm">
               <MapPinOff className="h-4 w-4" /> {locationError}
@@ -318,7 +386,7 @@ export default function MapHomePage() {
       {pendingViewport && viewport && pendingViewport.center.join() !== viewport.center.join() && (
         <button
           onClick={() => setViewport(pendingViewport)}
-          className="absolute left-1/2 top-32 z-[1000] -translate-x-1/2 lg:left-[30%] rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xl"
+          className="absolute left-1/2 top-32 z-[1000] -translate-x-1/2 lg:left-[30%] rounded-full bg-secondary px-4 py-2 text-xs font-bold text-white shadow-xl"
         >
           <RefreshCw className="mr-1 inline h-3.5 w-3.5" /> Search this area
         </button>
@@ -337,7 +405,7 @@ export default function MapHomePage() {
         <button onClick={locate} aria-label="Use my location" className="grid h-10 w-10 place-items-center rounded-xl bg-white text-slate-700 shadow-lg hover:bg-slate-50">
           <Locate className="h-4 w-4" />
         </button>
-        <button onClick={() => setSatellite((s) => !s)} aria-label="Toggle satellite" className={cn('grid h-10 w-10 place-items-center rounded-xl shadow-lg', satellite ? 'bg-slate-900 text-white' : 'bg-white text-slate-700')}>
+        <button onClick={() => setSatellite((s) => !s)} aria-label="Toggle satellite" className={cn('grid h-10 w-10 place-items-center rounded-xl shadow-lg', satellite ? 'bg-secondary text-white' : 'bg-white text-slate-700')}>
           <Layers className="h-4 w-4" />
         </button>
         <Link to="/properties" aria-label="Browse all verified listings" className="grid h-10 w-10 place-items-center rounded-xl bg-white text-slate-700 shadow-lg hover:bg-slate-50">
@@ -358,7 +426,7 @@ export default function MapHomePage() {
         <Compass className="h-5 w-5" />
       </button>
       {isRotated && (
-        <div className="absolute left-3 top-[13.5rem] z-[1000] flex items-center gap-1.5 rounded-full bg-slate-900/90 px-3 py-1.5 text-[11px] font-bold text-white shadow-lg">
+        <div className="absolute left-3 top-[13.5rem] z-[1000] flex items-center gap-1.5 rounded-full bg-secondary/90 px-3 py-1.5 text-[11px] font-bold text-white shadow-lg">
           <Navigation className="h-3 w-3" />
           {Math.round(((bearing % 360) + 360) % 360)}° — tap compass to reset north
         </div>
@@ -380,7 +448,7 @@ export default function MapHomePage() {
         />
       )}
 
-      {/* Selected marker card */}
+      {/* Selected marker card — the "your ride is here" panel: price, distance, request CTA */}
       {selected && !routeTarget && (
         <div className="absolute inset-x-3 bottom-[22vh] z-[950] mx-auto max-w-md lg:bottom-6 lg:right-[calc(min(40%,460px)+12px)] lg:left-auto lg:mx-0 lg:w-[380px]">
           <PropertyPreviewCard
@@ -394,6 +462,15 @@ export default function MapHomePage() {
               setCompare((c) => (c.some((x) => x.id === selected.id) ? c.filter((x) => x.id !== selected.id) : [...c, selected].slice(-3)))
             }
           />
+          <button
+            onClick={() => navigate(`/properties/${selected.id}`)}
+            className="btn-sheen mt-2 w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-white shadow-xl transition hover:bg-primary/90 active:scale-[0.99]"
+          >
+            Request viewing
+            {origin && (
+              <span className="font-medium text-white/85"> • {formatDistance(distanceKm(origin, [selected.lat, selected.lng]))} away</span>
+            )}
+          </button>
         </div>
       )}
 
@@ -440,7 +517,7 @@ export default function MapHomePage() {
             <Compass className="mx-auto mb-2 h-6 w-6 text-slate-400" />
             <p className="font-semibold text-slate-800">No verified homes in this area yet.</p>
             <p className="mt-1 text-sm text-slate-500">Move the map or expand your search radius.</p>
-            <button onClick={() => { setFilters(emptyFilters); setSubmitted(''); setQuery(''); refetch(); }} className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+            <button onClick={() => { setFilters(emptyFilters); setSubmitted(''); setQuery(''); refetch(); }} className="mt-4 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-white">
               Reset search
             </button>
           </div>
@@ -472,14 +549,14 @@ export default function MapHomePage() {
       {compare.length > 0 && (
         <button
           onClick={() => setCompareOpen(true)}
-          className="absolute bottom-[calc(18vh+16px)] left-3 z-[1000] inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xl"
+          className="absolute bottom-[calc(18vh+16px)] left-3 z-[1000] inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-xs font-bold text-white shadow-xl"
         >
           <GitCompare className="h-4 w-4" /> Compare {compare.length}
         </button>
       )}
 
       {compareOpen && (
-        <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-secondary/40 p-0 sm:items-center sm:p-4">
           <div className="max-h-[85vh] w-full overflow-auto rounded-t-3xl bg-white p-5 sm:max-w-2xl sm:rounded-3xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Compare properties</h2>

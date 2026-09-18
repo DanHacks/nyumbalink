@@ -86,7 +86,7 @@ export default function HomePage() {
 
   return (
     <div>
-      <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
+      <section className="relative bg-gradient-to-br from-[#0e1e3c] via-[#1c3260] to-[#0e1e3c] text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
         <div className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="max-w-3xl mx-auto text-center mb-10">
@@ -300,7 +300,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-16 bg-slate-900 text-white">
+      <section className="relative overflow-hidden py-16 bg-secondary text-white">
+        <div className="pointer-events-none absolute -top-20 right-10 h-64 w-64 rounded-full bg-primary/25 blur-3xl" aria-hidden />
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to Find Your Next Home?</h2>
@@ -310,7 +311,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/properties"
-                className="inline-flex items-center justify-center px-8 py-4 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors"
+                className="inline-flex items-center justify-center px-8 py-4 bg-primary text-white rounded-xl font-semibold shadow-lg transition hover:bg-primary/90"
               >
                 Browse Properties
                 <ChevronRight className="ml-2 h-5 w-5" />

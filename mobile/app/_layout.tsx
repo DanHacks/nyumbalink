@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Slot } from 'expo-router';
 import { Alert } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Updates from 'expo-updates';
 import { AuthProvider } from '@/lib/auth';
 import { StatusBar } from 'expo-status-bar';
@@ -42,11 +43,13 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <Slot />
-      </AuthProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <Slot />
+        </AuthProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }

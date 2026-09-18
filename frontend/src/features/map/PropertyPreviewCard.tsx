@@ -43,14 +43,14 @@ export default function PropertyPreviewCard({
 }) {
   const restricted = p.safety === 'restricted' || p.safety === 'blacklisted';
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+    <div className="card-lift overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:border-primary/30">
       <div className="flex">
-        <div className={cn('relative shrink-0', compact ? 'h-28 w-28' : 'h-32 w-36')}>
+        <div className={cn('zoom-frame relative shrink-0', compact ? 'h-28 w-28' : 'h-32 w-36')}>
           {p.photo ? (
             <img src={p.photo} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
           ) : (
-            <div className="grid h-full w-full place-items-center bg-gradient-to-br from-teal-50 to-slate-100">
-              <Home className="h-8 w-8 text-teal-300" />
+            <div className="grid h-full w-full place-items-center bg-gradient-to-br from-orange-100 to-amber-50">
+              <Home className="h-8 w-8 text-orange-300" />
             </div>
           )}
           {p.demo && (
@@ -89,7 +89,7 @@ export default function PropertyPreviewCard({
               {p.houseType} • {KIND_LABEL[p.kind]}
             </span>
             {p.verification !== 'basic' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-primary">
                 <ShieldCheck className="h-3 w-3" /> {VERIFICATION_LABEL[p.verification]}
               </span>
             )}
@@ -120,7 +120,7 @@ export default function PropertyPreviewCard({
           <div className="mt-3 flex items-center gap-2">
             <Link
               to={`/properties/${p.id}`}
-              className="flex-1 rounded-xl bg-slate-900 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-slate-800"
+              className="flex-1 rounded-xl bg-secondary px-3 py-2 text-center text-xs font-semibold text-white hover:bg-secondary/90"
             >
               View property
             </Link>
@@ -139,7 +139,7 @@ export default function PropertyPreviewCard({
                 onClick={onCompare}
                 className={cn(
                   'rounded-xl border px-3 py-2 text-xs font-semibold',
-                  compared ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50',
+                  compared ? 'border-primary bg-orange-50 text-primary' : 'border-slate-200 text-slate-700 hover:bg-slate-50',
                 )}
               >
                 <GitCompare className="h-4 w-4" />

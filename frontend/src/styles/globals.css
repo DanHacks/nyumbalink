@@ -8,20 +8,20 @@
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-    --primary: 24 94% 53%;
+    --primary: 24 95% 53%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217 55% 24%;
+    --secondary-foreground: 0 0% 98%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 24 100% 95%;
+    --accent-foreground: 20 85% 32%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 24 94% 53%;
-    --radius: 0.5rem;
+    --ring: 24 95% 53%;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -29,19 +29,19 @@
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-    --primary: 24 94% 53%;
+    --primary: 24 95% 53%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 217 50% 18%;
+    --secondary-foreground: 0 0% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 20 80% 22%;
+    --accent-foreground: 24 100% 88%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 24 94% 53%;
+    --ring: 24 95% 53%;
   }
 }
 
@@ -53,5 +53,82 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-display: swap;
+  }
+}
+
+@layer utilities {
+  /* Slow-drifting hero glow blobs */
+  @keyframes nl-drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(36px, -28px) scale(1.12); }
+  }
+  @keyframes nl-drift-alt {
+    0%, 100% { transform: translate(0, 0) scale(1.05); }
+    50% { transform: translate(-30px, 24px) scale(0.95); }
+  }
+  .animate-blob {
+    animation: nl-drift 11s ease-in-out infinite;
+  }
+  .animate-blob-alt {
+    animation: nl-drift-alt 14s ease-in-out infinite;
+  }
+
+  /* Town ticker */
+  @keyframes nl-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: nl-marquee 32s linear infinite;
+  }
+  .marquee-mask {
+    mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+
+  /* Fancy card physics */
+  .card-lift {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -18px rgba(15, 23, 42, 0.28), 0 8px 16px -12px rgba(234, 88, 12, 0.25);
+  }
+  .zoom-frame {
+    overflow: hidden;
+  }
+  .zoom-frame img {
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .zoom-frame:hover img {
+    transform: scale(1.06);
+  }
+
+  /* Button sheen sweep */
+  .btn-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%);
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+  }
+  .btn-sheen:hover::after {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-blob-alt,
+  .animate-marquee {
+    animation: none;
+  }
+  .card-lift:hover {
+    transform: none;
   }
 }

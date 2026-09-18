@@ -47,17 +47,19 @@ export default function PropertyCard({
   room: SearchRoom;
   className?: string;
 }) {
-  const href = `/properties/${room.property_id || room.id}`;
+  const href = room.property_id
+    ? `/properties/${room.property_id}`
+    : `/search?q=${encodeURIComponent(room.property_name || room.house_type || '')}`;
   return (
     <Link
       to={href}
       className={cn(
-        'group flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'group card-lift flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         className
       )}
     >
-      <div className="flex h-44 items-center justify-center bg-muted">
-        <span className="text-sm text-muted-foreground">Photos verified by owner</span>
+      <div className="zoom-frame flex h-44 items-center justify-center bg-gradient-to-br from-orange-100 via-amber-50 to-slate-100">
+        <span className="text-sm font-medium text-slate-500">Photos verified by owner</span>
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <div className="flex items-start justify-between gap-2">
@@ -80,12 +82,12 @@ export default function PropertyCard({
             </span>
           )}
           {room.internet_available && (
-            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-teal-700">
+            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-secondary">
               <Wifi className="h-3 w-3" /> WiFi
             </span>
           )}
           {room.water_available && (
-            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-teal-700">
+            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-secondary">
               <Droplets className="h-3 w-3" /> Water
             </span>
           )}

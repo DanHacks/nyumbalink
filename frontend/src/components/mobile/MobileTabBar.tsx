@@ -3,7 +3,7 @@ import { Map, Search, Heart, CalendarCheck, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TABS = [
-  { to: '/', label: 'Map', Icon: Map, end: true },
+  { to: '/explore?view=map', label: 'Explore', Icon: Map, end: false },
   { to: '/search', label: 'Search', Icon: Search },
   { to: '/saved', label: 'Saved', Icon: Heart },
   { to: '/viewings', label: 'Viewings', Icon: CalendarCheck },
@@ -24,7 +24,7 @@ export default function MobileTabBar() {
           className={({ isActive }) =>
             cn(
               'flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors',
-              isActive ? 'text-teal-700' : 'text-slate-500',
+              isActive ? 'text-primary' : 'text-slate-500',
             )
           }
         >

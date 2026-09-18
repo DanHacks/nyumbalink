@@ -21,6 +21,12 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=30 * 60,
     task_soft_time_limit=25 * 60,
+    beat_schedule={
+        "aggregate-daily-analytics": {
+            "task": "app.tasks.analytics.aggregate_daily_analytics",
+            "schedule": 24 * 60 * 60,
+        },
+    },
 )
 
 

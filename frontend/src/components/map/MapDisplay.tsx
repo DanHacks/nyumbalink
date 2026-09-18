@@ -354,7 +354,7 @@ export default function MapDisplay({
 
       {mapType === 'satellite' && (
         <div className="absolute bottom-4 left-4 z-[1000]">
-          <span className="bg-slate-900/80 text-white text-xs px-3 py-1.5 rounded-lg">
+          <span className="bg-secondary/80 text-white text-xs px-3 py-1.5 rounded-lg">
             Satellite View
           </span>
         </div>

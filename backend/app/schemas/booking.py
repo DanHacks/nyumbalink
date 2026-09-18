@@ -47,7 +47,7 @@ class QRCodeResponse(BaseModel):
 
 
 class CheckInRequest(BaseModel):
-    booking_id: str
+    booking_id: Optional[str] = None
     gps_latitude: float
     gps_longitude: float
     gps_accuracy: Optional[float] = None

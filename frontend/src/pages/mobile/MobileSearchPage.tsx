@@ -98,7 +98,7 @@ export default function MobileSearchPage() {
               onClick={() => setSort(s.id)}
               className={cn(
                 'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold',
-                sort === s.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600',
+                sort === s.id ? 'border-secondary bg-secondary text-white' : 'border-slate-200 text-slate-600',
               )}
             >
               {s.label}

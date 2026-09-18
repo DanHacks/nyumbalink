@@ -13,6 +13,26 @@ export default function MessagesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const load = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      setItems(await getConversations());
+    } catch {
+      setError('Could not load conversations.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      load();
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
   if (!user) {
     return (
       <View style={styles.flex}>
@@ -26,21 +46,6 @@ export default function MessagesScreen() {
       </View>
     );
   }
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      setItems(await getConversations());
-    } catch {
-      setError('Could not load conversations.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
 
   if (loading) return <LoadingState message="Loading messages…" />;
   if (error) return <ErrorState message={error} onRetry={load} />;
@@ -61,9 +66,9 @@ export default function MessagesScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} onPress={() => router.push(`/messages/${item.id}` as any)}>
-            <Text style={styles.name}>{item.participant_name ?? 'Conversation'}</Text>
+            <Text style={styles.name}>{item.other_user_name ?? item.participant_name ?? 'Conversation'}</Text>
             <Text style={styles.last} numberOfLines={1}>
-              {item.last_message ?? 'No messages yet'}
+              {item.last_message_preview ?? item.last_message ?? 'No messages yet'}
             </Text>
           </TouchableOpacity>
         )}

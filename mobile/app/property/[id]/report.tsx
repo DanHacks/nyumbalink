@@ -16,7 +16,7 @@ const REASONS: { value: string; label: string }[] = [
   { value: 'room_unavailable', label: 'Property unavailable' },
   { value: 'owner_fraud', label: 'Fraud / scam' },
   { value: 'misleading_description', label: 'Misleading information' },
-  { value: 'duplicate_listing', label: 'Duplicate property' },
+  { value: 'payment_scam', label: 'Payment scam' },
   { value: 'unsafe_property', label: 'Unsafe property' },
   { value: 'harassment', label: 'Harassment' },
   { value: 'other', label: 'Other' },
@@ -68,9 +68,10 @@ export default function ReportScreen() {
         const pos = await Location.getCurrentPositionAsync({});
         gps = { lat: pos.coords.latitude, lon: pos.coords.longitude };
       }
-      await createReport(id, {
+      await createReport(id as string, {
         report_category: reason,
         description: description.trim() || 'Reported via mobile app',
+        evidence,
         ...flags,
         reporter_gps_lat: gps?.lat,
         reporter_gps_lon: gps?.lon,

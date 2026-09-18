@@ -139,8 +139,8 @@ class RoomResponse(BaseModel):
     parking_available: bool
     pet_friendly: bool
     student_friendly: bool
-    building_name: Optional[str]
-    floor_number: Optional[int]
+    building_name: Optional[str] = None
+    floor_number: Optional[int] = None
 
     class Config:
         from_attributes = True

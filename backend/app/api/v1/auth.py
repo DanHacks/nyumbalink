@@ -13,7 +13,7 @@ from app.core.security import (
 )
 from app.core.dependencies import get_current_user
 from app.core.config import settings
-from app.models.user import User, UserSession
+from app.models.user import User, UserRole, UserSession
 from app.models.trust import OTPCode
 from app.schemas.auth import (
     RegisterRequest, LoginRequest, TokenResponse, RefreshTokenRequest,
@@ -28,8 +28,9 @@ OTP_MAX_ATTEMPTS = 5
 
 
 async def _issue_tokens(db: AsyncSession, user: User, session_label: str = "login"):
+    role_val = user.role.value if hasattr(user.role, "value") else (user.role or "unset")
     access_token = create_access_token(
-        data={"sub": user.id, "role": user.role.value if user.role else "unset"},
+        data={"sub": user.id, "role": role_val},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     refresh_token = create_refresh_token(data={"sub": user.id})
@@ -69,7 +70,7 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
         first_name=request.first_name,
         last_name=request.last_name,
         hashed_password=hash_password(request.password),
-        role=request.role,
+        role=UserRole(request.role),
     )
     db.add(user)
     await db.flush()
@@ -196,10 +197,12 @@ async def verify_otp(
     )
     user = result.scalar_one_or_none()
     if not user:
+        base_name = request.phone or (request.email.split("@")[0] if request.email else "User")
         user = User(
             phone=request.phone,
             email=request.email or f"user+{uuid.uuid4().hex[:8]}@nyumbalink.local",
-            first_name=request.phone or request.email.split("@")[0],
+            first_name=base_name,
+            last_name="User",
         )
         db.add(user)
         await db.flush()
@@ -249,8 +252,8 @@ async def google_login(
     if not user:
         user = User(
             email=email,
-            first_name=data.get("given_name"),
-            last_name=data.get("family_name"),
+            first_name=data.get("given_name") or email.split("@")[0],
+            last_name=data.get("family_name") or "User",
             google_id=data.get("sub"),
             is_email_verified=True,
         )
@@ -269,7 +272,8 @@ async def select_role(
     """Set the role for an account that has not yet chosen one (e.g. a user
     who signed up with Google). Caretaker/admin/etc. roles are assigned by
     other flows and cannot be self-selected."""
-    if current_user.role is not None and current_user.role.value != request.role:
+    current_role = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    if current_role is not None and current_role != request.role:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Account role is already set. Contact support to change it.",
@@ -312,7 +316,7 @@ async def refresh_token(request: RefreshTokenRequest, db: AsyncSession = Depends
         )
 
     new_access_token = create_access_token(
-        data={"sub": user.id, "role": user.role.value if user.role else "unset"},
+        data={"sub": user.id, "role": user.role.value if hasattr(user.role, "value") else (user.role or "unset")},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     new_refresh_token = create_refresh_token(data={"sub": user.id})

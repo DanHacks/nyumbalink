@@ -28,7 +28,7 @@ export default function RecommendScreen() {
     }
     setBusy(true);
     try {
-      await createReview(id, { rating, comment: comment.trim(), positive_factors: factors });
+      await createReview(id as string, { rating, comment: comment.trim(), positive_factors: factors });
       setDone(true);
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Recommendation could not be submitted.');

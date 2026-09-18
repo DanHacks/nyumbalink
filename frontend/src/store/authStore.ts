@@ -23,6 +23,8 @@ export function homeRouteFor(role: string | null | undefined): string {
     case 'tenant':
       return '/tenant';
     case 'owner':
+    case 'host':
+    case 'manager':
       return '/owner';
     case 'agent':
       return '/agent';

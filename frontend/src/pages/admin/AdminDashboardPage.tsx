@@ -38,6 +38,18 @@ export default function AdminDashboardPage() {
     enabled: activeTab === 'scam',
   });
 
+  const { data: adminProperties } = useQuery({
+    queryKey: ['admin-properties'],
+    queryFn: () => adminApi.listProperties(),
+    enabled: activeTab === 'properties',
+  });
+
+  const { data: analyticsOverview } = useQuery({
+    queryKey: ['admin-overview'],
+    queryFn: () => adminApi.getAnalyticsOverview(),
+    enabled: activeTab === 'settings' || activeTab === 'overview',
+  });
+
   const approvePhotoMutation = useMutation({
     mutationFn: (photoId: string) => verificationApi.approvePhoto(photoId),
     onSuccess: () => {
@@ -63,6 +75,24 @@ export default function AdminDashboardPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-scam'] });
     },
   });
+
+  const roleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      adminApi.updateUserRole(userId, role),
+    onSuccess: () => {
+      toast.success('Role updated');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Role update failed'),
+  });
+
+  const verifyPropertyMutation = useMutation({
+    mutationFn: (propertyId: string) => verificationApi.verifyProperty(propertyId),
+    onSuccess: () => toast.success('Property verified'),
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Verify failed'),
+  });
+
+  const usersList: any[] = Array.isArray(users?.data) ? users.data : (users?.data?.users ?? []);
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -173,8 +203,8 @@ export default function AdminDashboardPage() {
 
       {activeTab === 'users' && (
         <div className="bg-white rounded-xl border p-6">
-          <h2 className="text-xl font-semibold mb-4">Users</h2>
-          {(users?.data?.length ?? 0) > 0 ? (
+          <h2 className="text-xl font-semibold mb-4">Users {users?.data?.total != null && <span className="text-sm text-gray-500">({users.data.total} total)</span>}</h2>
+          {usersList.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -188,11 +218,22 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(users?.data ?? []).map((u: any) => (
+                  {usersList.map((u: any) => (
                     <tr key={u.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">{u.first_name} {u.last_name}</td>
                       <td className="py-3 px-4">{u.email}</td>
-                      <td className="py-3 px-4 capitalize">{u.role}</td>
+                      <td className="py-3 px-4">
+                        <select
+                          value={u.role || ''}
+                          onChange={(e) => e.target.value && roleMutation.mutate({ userId: u.id, role: e.target.value })}
+                          className="border rounded px-2 py-1 text-sm capitalize"
+                        >
+                          <option value="">—</option>
+                          {['student', 'tenant', 'owner', 'caretaker', 'manager', 'host', 'agent', 'moderator', 'verification_officer', 'admin', 'superadmin'].map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      </td>
                       <td className="py-3 px-4">
                         <span className={`inline-flex text-xs px-2 py-1 rounded-full ${
                           u.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -231,7 +272,24 @@ export default function AdminDashboardPage() {
       {activeTab === 'properties' && (
         <div className="bg-white rounded-xl border p-6">
           <h2 className="text-xl font-semibold mb-4">All Properties</h2>
-          <p className="text-gray-600">Property management coming soon</p>
+          {(adminProperties?.data?.length ?? 0) > 0 ? (
+            <div className="space-y-3">
+              {(adminProperties?.data ?? []).map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between gap-3 border rounded-lg p-3 text-sm">
+                  <div>
+                    <p className="font-semibold">{p.property_name} <span className="text-gray-400">({p.property_code})</span></p>
+                    <p className="text-gray-500">{p.city}, {p.county} · {p.status} · {p.vacant_rooms}/{p.total_rooms} vacant</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => verifyPropertyMutation.mutate(p.id)} className="px-3 py-1.5 bg-green-600 text-white rounded-lg">Verify</button>
+                    <a href={`/properties/${p.id}`} className="px-3 py-1.5 border rounded-lg">Open</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600 text-center py-8">No properties found</p>
+          )}
         </div>
       )}
 
@@ -282,9 +340,31 @@ export default function AdminDashboardPage() {
       )}
 
       {activeTab === 'settings' && (
-        <div className="bg-white rounded-xl border p-6">
-          <h2 className="text-xl font-semibold mb-4">Platform Settings</h2>
-          <p className="text-gray-600">Settings panel coming soon</p>
+        <div className="bg-white rounded-xl border p-6 space-y-4">
+          <h2 className="text-xl font-semibold">Platform Settings & Overview</h2>
+          {analyticsOverview?.data ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Users by role</h3>
+                <pre className="text-xs bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(analyticsOverview.data.users_by_role, null, 2)}</pre>
+              </div>
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Properties by status</h3>
+                <pre className="text-xs bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(analyticsOverview.data.properties_by_status, null, 2)}</pre>
+              </div>
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Revenue & bookings</h3>
+                <p>Total revenue: KES {(analyticsOverview.data.total_revenue || 0).toLocaleString()}</p>
+                <p>Total bookings: {analyticsOverview.data.total_bookings ?? 0}</p>
+              </div>
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Verification policy</h3>
+                <p className="text-gray-600">12 approved GPS photos + walkthrough video required before a property can be marked Verified. Enforced in backend verification flow.</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-600">Loading overview...</p>
+          )}
         </div>
       )}
     </div>

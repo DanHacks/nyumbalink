@@ -17,17 +17,10 @@ const EXPLORE_REGION: Region = {
 
 function filtersToParams(f: PropertyFilters) {
   const p: Record<string, any> = {};
-  if (f.price_max != null) p.price_max = f.price_max;
+  if (f.price_max != null) p.max_price = f.price_max;
+  if (f.price_min != null) p.min_price = f.price_min;
   if (f.property_type) p.property_type = f.property_type;
-  if (f.rooms != null) p.rooms = f.rooms;
   if (f.verified_only) p.verified_only = true;
-  if (f.student) p.student = true;
-  if (f.gender) p.gender = f.gender;
-  if (f.furnished) p.furnished = true;
-  if (f.wifi) p.wifi = true;
-  if (f.water) p.water = true;
-  if (f.parking) p.parking = true;
-  if (f.security) p.security = true;
   return p;
 }
 

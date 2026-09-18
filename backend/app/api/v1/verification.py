@@ -169,6 +169,14 @@ async def upload_verification_photo(
 
     await _validate_photo_gps(db, property_id, latitude, longitude, photo_time)
 
+    try:
+        photo_category = PhotoCategory(category)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid photo category: {category}",
+        )
+
     content = await file.read()
     if len(content) > settings.MAX_UPLOAD_SIZE:
         raise HTTPException(
@@ -194,7 +202,7 @@ async def upload_verification_photo(
         property_id=property_id,
         owner_id=current_user.id,
         uploaded_by=current_user.id,
-        category=category,
+        category=photo_category,
         storage_url=storage_path,
         file_hash=file_hash,
         file_size_bytes=len(content),
@@ -203,6 +211,14 @@ async def upload_verification_photo(
         metadata_id=metadata.id,
     )
     db.add(photo)
+    await db.flush()
+
+    try:
+        from app.tasks.verification import process_photo_verification, check_duplicate_photos
+        process_photo_verification.delay(photo.id)
+        check_duplicate_photos.delay(property_id)
+    except Exception:
+        pass
 
     audit = MediaAuditLog(
         media_type="photo",
@@ -223,7 +239,7 @@ async def upload_verification_photo(
 
     return PhotoUploadResponse(
         id=photo.id,
-        category=category,
+        category=photo_category.value,
         storage_url=build_media_url(photo.storage_url, request),
         thumbnail_url=photo.thumbnail_url,
         verification_status="pending",
@@ -365,6 +381,7 @@ async def upload_walkthrough_video(
         existing.longitude = longitude
         existing.timestamp = video_time
         video = existing
+        await db.flush()
     else:
         video = WalkthroughVideo(
             property_id=property_id,
@@ -380,6 +397,14 @@ async def upload_walkthrough_video(
             verification_status=VerificationStatus.PENDING,
         )
         db.add(video)
+        await db.flush()
+
+    try:
+        from app.tasks.verification import process_video_verification
+        if video.id:
+            process_video_verification.delay(video.id)
+    except Exception:
+        pass
 
     audit = MediaAuditLog(
         media_type="video",
@@ -430,8 +455,35 @@ async def approve_video(
         performed_by=current_user.id,
     )
     db.add(audit)
+    await db.flush()
 
     return {"message": "Video approved"}
+
+
+@router.post("/video/{video_id}/reject")
+async def reject_video(
+    video_id: str,
+    reason: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_verification_officer),
+):
+    result = await db.execute(
+        select(WalkthroughVideo).where(WalkthroughVideo.id == video_id)
+    )
+    video = result.scalar_one_or_none()
+    if not video:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video not found")
+    video.verification_status = VerificationStatus.REJECTED
+    audit = MediaAuditLog(
+        media_type="video",
+        media_id=video.id,
+        action="rejected",
+        performed_by=current_user.id,
+        details={"reason": reason},
+    )
+    db.add(audit)
+    await db.flush()
+    return {"message": "Video rejected"}
 
 
 @router.post("/property/{property_id}/verify")

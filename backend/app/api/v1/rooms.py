@@ -8,7 +8,7 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.property import (
     Room, RoomAmenity, Building, Floor,
-    OccupancyStatus, Property, PropertyStatus,
+    OccupancyStatus, HouseType, Property, PropertyStatus,
 )
 from app.schemas.property import RoomCreate, RoomUpdate, RoomResponse
 from app.services.safety_service import blacklist_exclusion, record_audit
@@ -54,9 +54,21 @@ async def list_property_rooms(
     )
 
     if status_filter:
-        query = query.where(Room.occupancy_status == status_filter)
+        try:
+            query = query.where(Room.occupancy_status == OccupancyStatus(status_filter))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid occupancy status: {status_filter}",
+            )
     if house_type:
-        query = query.where(Room.house_type == house_type)
+        try:
+            query = query.where(Room.house_type == HouseType(house_type))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid house type: {house_type}",
+            )
     if min_price is not None:
         query = query.where(Room.rent_amount >= min_price)
     if max_price is not None:
@@ -125,7 +137,13 @@ async def list_vacant_rooms(
     if max_price is not None:
         query = query.where(Room.rent_amount <= max_price)
     if house_type:
-        query = query.where(Room.house_type == house_type)
+        try:
+            query = query.where(Room.house_type == HouseType(house_type))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid house type: {house_type}",
+            )
 
     query = query.options(selectinload(Room.building), selectinload(Room.floor))
     query = query.offset((page - 1) * page_size).limit(page_size)
@@ -214,11 +232,18 @@ async def update_room(
     if request.negotiable is not None:
         room.negotiable = request.negotiable
     if request.occupancy_status is not None:
+        try:
+            new_status = OccupancyStatus(request.occupancy_status)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid occupancy status: {request.occupancy_status}",
+            )
         old_status = room.occupancy_status
-        room.occupancy_status = request.occupancy_status
-        if request.occupancy_status == OccupancyStatus.OCCUPIED:
+        room.occupancy_status = new_status
+        if new_status == OccupancyStatus.OCCUPIED:
             room.last_occupied_at = datetime.now(timezone.utc)
-        elif request.occupancy_status == OccupancyStatus.VACANT:
+        elif new_status == OccupancyStatus.VACANT:
             room.last_vacated_at = datetime.now(timezone.utc)
     if request.furnishing is not None:
         room.furnishing = request.furnishing

@@ -22,13 +22,18 @@ export default function SearchPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['search', query, filters],
-    queryFn: () =>
-      searchApi.smart({
-        q: query,
-        ...filters,
-        min_price: filters.min_price ? parseFloat(filters.min_price) : undefined,
-        max_price: filters.max_price ? parseFloat(filters.max_price) : undefined,
-      }),
+    queryFn: () => {
+      const params: any = { q: query };
+      if (filters.min_price) params.min_price = parseFloat(filters.min_price);
+      if (filters.max_price) params.max_price = parseFloat(filters.max_price);
+      if (filters.house_type) params.house_type = filters.house_type;
+      if (filters.pet_friendly) params.pet_friendly = true;
+      if (filters.student_friendly) params.student_friendly = true;
+      if (filters.parking) params.parking = true;
+      if (filters.internet) params.internet = true;
+      if (filters.water) params.water = true;
+      return searchApi.smart(params);
+    },
     enabled: query.length > 0,
   });
 
@@ -186,7 +191,7 @@ export default function SearchPage() {
                           <span className="text-sm text-gray-500 font-normal">/mo</span>
                         </div>
                         <Link
-                          to={`/properties/${room.property_rel?.id || '#'}`}
+                          to={room.property_id ? `/properties/${room.property_id}` : `/search?q=${encodeURIComponent(room.property_name || query)}`}
                           className="text-sm text-primary hover:underline mt-1 inline-block"
                         >
                           View Details

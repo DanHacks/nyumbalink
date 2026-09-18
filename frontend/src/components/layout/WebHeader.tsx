@@ -7,14 +7,13 @@ import { cn } from '@/lib/utils';
 const PRIMARY = [
   { to: '/', label: 'Home', end: true },
   { to: '/explore', label: 'Explore' },
-  { to: '/map', label: 'Map' },
   { to: '/saved', label: 'Saved' },
   { to: '/viewings', label: 'Viewings' },
 ];
 
 const CATEGORIES = [
   { to: '/explore?kind=rental', label: 'Rentals' },
-  { to: '/explore?kind=hostel', label: 'Student Housing' },
+  { to: '/universities', label: 'Student Housing' },
   { to: '/explore?kind=hostel', label: 'Hostels' },
   { to: '/explore?kind=airbnb', label: 'Airbnb' },
   { to: '/explore?kind=guest_house', label: 'Guest Houses' },
@@ -29,11 +28,11 @@ export default function WebHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6">
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <img src="/logo.png" alt="NyumbaLink" className="h-9 w-9 rounded-lg object-contain" />
-          <span className="text-lg font-bold tracking-tight text-slate-900">NyumbaLink</span>
+          <span className="text-lg font-bold tracking-tight text-secondary">Nyumba<span className="text-primary">Link</span></span>
         </Link>
 
         <form
@@ -62,7 +61,7 @@ export default function WebHeader() {
               className={({ isActive }) =>
                 cn(
                   'rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:text-slate-900',
+                  isActive ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:text-slate-900',
                 )
               }
             >
@@ -92,7 +91,7 @@ export default function WebHeader() {
           <Link to="/dashboard" className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
             Owner Portal
           </Link>
-          <Link to="/trust" className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+          <Link to="/safety" className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
             <ShieldCheck className="h-4 w-4" aria-hidden /> Help &amp; Safety
           </Link>
         </nav>
@@ -121,7 +120,7 @@ export default function WebHeader() {
               <Link to="/login" className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:text-slate-900">
                 Sign in
               </Link>
-              <Link to="/register" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+              <Link to="/register" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
                 Get started
               </Link>
             </>
@@ -150,7 +149,7 @@ export default function WebHeader() {
                 className={({ isActive }) =>
                   cn(
                     'block rounded-md px-3 py-2 text-sm font-medium',
-                    isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-50',
+                    isActive ? 'bg-primary/10 text-primary' : 'text-slate-700 hover:bg-slate-50',
                   )
                 }
               >
@@ -182,7 +181,7 @@ export default function WebHeader() {
                   <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 rounded-md border border-slate-200 px-3 py-2 text-center text-sm font-medium">
                     Sign in
                   </Link>
-                  <Link to="/register" onClick={() => setMobileOpen(false)} className="flex-1 rounded-md bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white">
+                  <Link to="/register" onClick={() => setMobileOpen(false)} className="flex-1 rounded-md bg-primary px-3 py-2 text-center text-sm font-semibold text-white">
                     Get started
                   </Link>
                 </div>

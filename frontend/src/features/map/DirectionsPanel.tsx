@@ -32,7 +32,7 @@ export default function DirectionsPanel({
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-2 border-b border-slate-100 p-3">
           <div className="flex min-w-0 items-start gap-2">
-            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-teal-50 text-teal-700">
+            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-orange-100 text-primary">
               <Navigation className="h-4 w-4" />
             </span>
             <div className="min-w-0">
@@ -54,7 +54,7 @@ export default function DirectionsPanel({
               onClick={() => onModeChange(m)}
               className={cn(
                 'flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold',
-                mode === m ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50',
+                mode === m ? 'bg-secondary text-white' : 'text-slate-600 hover:bg-slate-50',
               )}
             >
               {m === 'driving' ? <Car className="h-4 w-4" /> : <Footprints className="h-4 w-4" />}
@@ -102,7 +102,7 @@ export default function DirectionsPanel({
               href={`https://www.google.com/maps/dir/?api=1&origin=${result.coordinates[0][0]},${result.coordinates[0][1]}&destination=${result.coordinates[result.coordinates.length - 1][0]},${result.coordinates[result.coordinates.length - 1][1]}&travelmode=${mode}`}
               target="_blank"
               rel="noreferrer"
-              className="block rounded-xl bg-slate-900 py-2.5 text-center text-xs font-bold text-white hover:bg-slate-800"
+              className="block rounded-xl bg-secondary py-2.5 text-center text-xs font-bold text-white hover:bg-secondary/90"
             >
               Open in Google Maps
             </a>

@@ -11,7 +11,6 @@ import SavedPage from '@/pages/mobile/SavedPage';
 import ViewingsPage from '@/pages/mobile/ViewingsPage';
 import AccountPage from '@/pages/mobile/AccountPage';
 import HomePage from '@/pages/HomePage';
-import MapHomePage from '@/pages/MapHomePage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ChooseRolePage from '@/pages/auth/ChooseRolePage';
@@ -157,9 +156,7 @@ export default function App() {
           {PublicRoutes}
         </Route>
 
-        <Route path="/map" element={<WebLayout />}>
-          <Route index element={<MapHomePage />} />
-        </Route>
+        <Route path="/map" element={<Navigate to="/explore?view=map" replace />} />
         <Route element={<MobileShell />}>
           <Route path="search" element={<MobileSearchPage />} />
           <Route path="explore" element={<MobileSearchPage />} />
@@ -172,13 +169,15 @@ export default function App() {
           <Route path="register" element={<RegisterPage />} />
           <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
+          <Route path="messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+          <Route path="notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
           <Route path="student" element={<RoleRoute allow={['student']}><StudentDashboardPage /></RoleRoute>} />
           <Route path="tenant" element={<RoleRoute allow={['tenant']}><TenantDashboardPage /></RoleRoute>} />
-          <Route path="owner" element={<RoleRoute allow={['owner', 'agent', 'caretaker']}><OwnerDashboardPage /></RoleRoute>} />
-          <Route path="agent" element={<RoleRoute allow={['agent', 'owner', 'caretaker']}><OwnerDashboardPage /></RoleRoute>} />
-          <Route path="caretaker" element={<RoleRoute allow={['caretaker', 'owner', 'agent']}><OwnerDashboardPage /></RoleRoute>} />
-          <Route path="choose-role" element={<RoleRoute allow={['__none__', 'student', 'tenant', 'owner', 'agent']}><ChooseRolePage /></RoleRoute>} />
+          <Route path="owner" element={<RoleRoute allow={['owner', 'agent', 'caretaker', 'host', 'manager']}><OwnerDashboardPage /></RoleRoute>} />
+          <Route path="agent" element={<RoleRoute allow={['agent', 'owner', 'caretaker', 'host', 'manager']}><OwnerDashboardPage /></RoleRoute>} />
+          <Route path="caretaker" element={<RoleRoute allow={['caretaker', 'owner', 'agent', 'host', 'manager']}><OwnerDashboardPage /></RoleRoute>} />
+          <Route path="choose-role" element={<RoleRoute allow={['__none__', 'student', 'tenant', 'owner', 'agent', 'caretaker', 'host', 'manager']}><ChooseRolePage /></RoleRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
@@ -187,9 +186,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/map" element={<WebLayout />}>
-        <Route index element={<MapHomePage />} />
-      </Route>
+      <Route path="/map" element={<Navigate to="/explore?view=map" replace />} />
       <Route path="/" element={<WebLayout />}>
         <Route index element={<WebHomePage />} />
         {PublicRoutes}
@@ -271,7 +268,7 @@ export default function App() {
         <Route
           path="owner"
           element={
-            <RoleRoute allow={['owner', 'agent', 'caretaker']}>
+            <RoleRoute allow={['owner', 'agent', 'caretaker', 'host', 'manager']}>
               <OwnerDashboardPage />
             </RoleRoute>
           }
@@ -279,7 +276,7 @@ export default function App() {
         <Route
           path="agent"
           element={
-            <RoleRoute allow={['agent', 'owner', 'caretaker']}>
+            <RoleRoute allow={['agent', 'owner', 'caretaker', 'host', 'manager']}>
               <OwnerDashboardPage />
             </RoleRoute>
           }
@@ -287,7 +284,7 @@ export default function App() {
         <Route
           path="caretaker"
           element={
-            <RoleRoute allow={['caretaker', 'owner', 'agent']}>
+            <RoleRoute allow={['caretaker', 'owner', 'agent', 'host', 'manager']}>
               <OwnerDashboardPage />
             </RoleRoute>
           }
@@ -295,7 +292,7 @@ export default function App() {
         <Route
           path="choose-role"
           element={
-            <RoleRoute allow={['__none__', 'student', 'tenant', 'owner', 'agent']}>
+            <RoleRoute allow={['__none__', 'student', 'tenant', 'owner', 'agent', 'caretaker', 'host', 'manager']}>
               <ChooseRolePage />
             </RoleRoute>
           }
@@ -308,6 +305,7 @@ export default function App() {
             </AdminRoute>
           }
         />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   );

@@ -25,7 +25,7 @@ async def visible_coordinates(db: AsyncSession, property, user: User):
     BOOKED_USER       -> exact only for owner/staff and users with a
                          completed/confirmed booking or verified visit
     """
-    privacy = property.location_privacy or "approximate"
+    privacy = (property.location_privacy or "approximate").lower()
     lat, lon = property.latitude, property.longitude
 
     if privacy == "public":

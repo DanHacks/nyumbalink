@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { api, setAuthToken, login as apiLogin, register as apiRegister, selectRole as apiSelectRole, fetchMe, logout as apiLogout } from '@/lib/api';
+import { api, setAuthToken, login as apiLogin, register as apiRegister, selectRole as apiSelectRole, fetchMe, logout as apiLogout, refreshTokens } from '@/lib/api';
 import type { User, UserRole } from '@/lib/types';
 
 const ACCESS_KEY = 'nl_access_token';
@@ -10,7 +10,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (payload: { email: string; password: string; full_name: string; phone?: string; role?: string }) => Promise<void>;
+  register: (payload: { email: string; password: string; first_name: string; last_name: string; phone: string; role?: string }) => Promise<void>;
   selectRole: (role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -46,6 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(me);
     } catch {
       setUser(null);
+      setAuthToken(null);
+      try {
+        await SecureStore.deleteItemAsync(ACCESS_KEY);
+      } catch {}
     }
   }, []);
 
@@ -70,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (payload: { email: string; password: string; full_name: string; phone?: string; role?: string }) => {
+    async (payload: { email: string; password: string; first_name: string; last_name: string; phone: string; role?: string }) => {
       const data = await apiRegister(payload);
       await applyTokens(data.access_token, data.refresh_token);
       await refreshUser();
@@ -87,9 +91,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    await apiLogout();
-    await SecureStore.deleteItemAsync(ACCESS_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_KEY);
+    try {
+      const refresh = await SecureStore.getItemAsync(REFRESH_KEY);
+      await apiLogout(refresh);
+    } catch {}
+    try {
+      await SecureStore.deleteItemAsync(ACCESS_KEY);
+    } catch {}
+    try {
+      await SecureStore.deleteItemAsync(REFRESH_KEY);
+    } catch {}
     setAuthToken(null);
     setUser(null);
   }, []);

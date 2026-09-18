@@ -12,7 +12,7 @@ const GROUPS: { title: string; items: { label: string; to: string; Icon: typeof 
       { label: 'Saved properties', to: '/saved', Icon: Heart },
       { label: 'Saved searches', to: '/search', Icon: Search },
       { label: 'Viewings', to: '/viewings', Icon: CalendarCheck },
-      { label: 'Messages', to: '/account', Icon: MessageSquare },
+      { label: 'Messages', to: '/messages', Icon: MessageSquare },
     ],
   },
   {
@@ -21,13 +21,13 @@ const GROUPS: { title: string; items: { label: string; to: string; Icon: typeof 
       { label: 'Identity verification', to: '/profile', Icon: ShieldCheck },
       { label: 'My reviews', to: '/profile', Icon: Star },
       { label: 'My reports', to: '/profile', Icon: Flag },
-      { label: 'Student profile', to: '/profile', Icon: GraduationCap },
+      { label: 'Student profile', to: '/student', Icon: GraduationCap },
     ],
   },
   {
     title: 'Settings',
     items: [
-      { label: 'Notifications', to: '/profile', Icon: Bell },
+      { label: 'Notifications', to: '/notifications', Icon: Bell },
       { label: 'Privacy', to: '/profile', Icon: Lock },
       { label: 'Language', to: '/profile', Icon: Globe },
       { label: 'Owner portal', to: '/dashboard', Icon: Building2 },
@@ -43,7 +43,7 @@ export default function AccountPage() {
     <div className="h-full overflow-y-auto bg-slate-50 pb-8">
       <header className="bg-white px-4 pb-5 pt-6">
         <div className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-teal-600 text-lg font-bold text-white">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-primary text-lg font-bold text-white shadow-sm">
             {isAuthenticated && user ? (user.first_name?.[0] ?? 'N') : <User className="h-5 w-5" aria-hidden />}
           </div>
           <div className="min-w-0">
@@ -57,7 +57,7 @@ export default function AccountPage() {
         </div>
         {!isAuthenticated && (
           <div className="mt-4 flex gap-2">
-            <Link to="/login" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white">
+            <Link to="/login" className="flex-1 rounded-xl bg-secondary py-2.5 text-center text-sm font-semibold text-white hover:bg-secondary/90">
               Sign in
             </Link>
             <Link to="/register" className="flex-1 rounded-xl border border-slate-200 py-2.5 text-center text-sm font-semibold text-slate-800">

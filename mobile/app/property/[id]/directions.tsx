@@ -18,18 +18,18 @@ export default function DirectionsScreen() {
     (async () => {
       setLoading(true);
       try {
-        const p = await getProperty(id);
+        const p = await getProperty(id as string);
         const to = { lat: p.latitude, lng: p.longitude };
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted' || to.lat == null) {
-          setInfo({ to });
+        if (status !== 'granted' || to.lat == null || to.lng == null) {
+          setInfo({ to: to.lat != null && to.lng != null ? to : undefined });
           return;
         }
         const pos = await Location.getCurrentPositionAsync({});
         const from = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         try {
-          const d = await getDirections(from, to);
-          setInfo({ distance: d.distance_km, duration: d.duration_min, to, from });
+          const d = await getDirections(id as string, from);
+          setInfo({ distance: d.walking_distance_km ?? d.driving_distance_km, duration: undefined, to, from });
         } catch {
           setInfo({ to, from });
         }
@@ -65,7 +65,7 @@ export default function DirectionsScreen() {
         </Text>
       </View>
 
-      {info.to ? (
+      {info.to?.lat != null && info.to?.lng != null ? (
         <Text style={styles.coords}>
           Destination: {info.to.lat.toFixed(5)}, {info.to.lng.toFixed(5)}
         </Text>

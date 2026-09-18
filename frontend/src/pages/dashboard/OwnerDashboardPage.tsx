@@ -1,18 +1,34 @@
-import { useQuery } from '@tanstack/react-query';
-import { analyticsApi, propertiesApi } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { analyticsApi, bookingsApi } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { Link } from 'react-router-dom';
 import {
-  BarChart3, Home, Eye, MousePointerClick,
-  Calendar, TrendingUp, Users, Plus,
+  Home, Eye, MousePointerClick,
+  Calendar, Plus,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function OwnerDashboardPage() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const { data: analytics } = useQuery({
     queryKey: ['owner-analytics'],
     queryFn: () => analyticsApi.getOwnerDashboard(),
+  });
+
+  const { data: bookings } = useQuery({
+    queryKey: ['property-bookings'],
+    queryFn: () => bookingsApi.getMyPropertyBookings(),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => bookingsApi.updateStatus(id, { status }),
+    onSuccess: () => {
+      toast.success('Booking updated');
+      queryClient.invalidateQueries({ queryKey: ['property-bookings'] });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Update failed'),
   });
 
   const stats = [
@@ -33,6 +49,12 @@ export default function OwnerDashboardPage() {
       value: analytics?.data?.total_clicks || 0,
       icon: MousePointerClick,
       color: 'bg-purple-500',
+    },
+    {
+      label: 'Viewing Requests',
+      value: bookings?.data?.length || 0,
+      icon: Calendar,
+      color: 'bg-orange-500',
     },
   ];
 
@@ -61,7 +83,7 @@ export default function OwnerDashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl border p-6">
             <div className="flex items-center justify-between">
@@ -127,6 +149,37 @@ export default function OwnerDashboardPage() {
             </Link>
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-xl border p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-4">Incoming viewing requests</h2>
+        {(bookings?.data?.length ?? 0) === 0 ? (
+          <p className="text-sm text-gray-500">No requests yet. Share your listing to get bookings.</p>
+        ) : (
+          <div className="space-y-3">
+            {(bookings?.data ?? []).slice(0, 10).map((b: any) => (
+              <div key={b.id} className="flex items-center justify-between gap-3 border rounded-lg p-3 text-sm">
+                <div>
+                  <p className="font-semibold">{b.property_name || b.property_id?.slice(0, 8)} · {b.status}</p>
+                  <p className="text-gray-500">{b.tenant_name || ''}</p>
+                </div>
+                <div className="flex gap-2">
+                  {b.status === 'pending' && (
+                    <>
+                      <button onClick={() => statusMutation.mutate({ id: b.id, status: 'confirmed' })} className="px-3 py-1.5 bg-green-600 text-white rounded-lg">Confirm</button>
+                      <button onClick={() => statusMutation.mutate({ id: b.id, status: 'cancelled' })} className="px-3 py-1.5 border rounded-lg">Decline</button>
+                    </>
+                  )}
+                  {b.status === 'confirmed' && (
+                    <button onClick={() => statusMutation.mutate({ id: b.id, status: 'completed' })} className="px-3 py-1.5 bg-secondary text-white rounded-lg hover:bg-secondary/90">Complete</button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <Link to="/bookings" className="text-sm text-primary hover:underline">View all →</Link>
+          </div>
+        )}
+        <p className="text-xs text-gray-500 mt-4">Tip: open a property to upload GPS verification photos, manage rooms (vacant/occupied), and track views.</p>
       </div>
     </div>
   );

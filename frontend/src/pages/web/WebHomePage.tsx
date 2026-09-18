@@ -7,6 +7,7 @@ import { useAllProperties } from '@/features/map/useAllProperties';
 import { buildTierIndex } from '@/features/map/logic';
 import PropertyPreviewCard from '@/features/map/PropertyPreviewCard';
 import MapCanvas from '@/features/map/MapCanvas';
+import { HeroIn, Reveal, CountUp } from '@/components/motion';
 import type { MapProperty } from '@/features/map/types';
 
 const PILLARS = [
@@ -24,15 +25,15 @@ function Section({ title, subtitle, items, tierOf }: { title: string; subtitle: 
           <h2 className="text-xl font-bold tracking-tight text-slate-900">{title}</h2>
           <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
-        <Link to="/explore" className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-teal-700">
-          View all <ArrowRight className="h-4 w-4" aria-hidden />
+        <Link to="/explore" className="group inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:text-primary/80">
+          View all <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
         </Link>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {items.slice(0, 4).map((p) => (
-          <div key={p.id}>
+        {items.slice(0, 4).map((p, i) => (
+          <Reveal key={p.id} delay={i * 0.07}>
             <PropertyPreviewCard p={p} tier={tierOf(p)} compact />
-            </div>
+            </Reveal>
         ))}
       </div>
     </section>
@@ -53,24 +54,34 @@ export default function WebHomePage() {
 
   return (
     <>
-      <section className="border-b border-slate-200 bg-slate-50">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-2 lg:py-20">
+      <section className="relative overflow-hidden bg-secondary text-white">
+        <div className="animate-blob pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-primary/25 blur-3xl" aria-hidden />
+        <div className="animate-blob-alt pointer-events-none absolute -bottom-32 left-10 h-72 w-72 rounded-full bg-primary/15 blur-3xl" aria-hidden />
+        <div className="animate-blob pointer-events-none absolute top-1/3 left-1/2 h-56 w-56 rounded-full bg-sky-500/15 blur-3xl" aria-hidden />
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-2 lg:py-20">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Verified homes. Real locations.</p>
-            <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight text-slate-900 lg:text-5xl">
-              Find a real place. See the real location. Verify before you pay.
-            </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600">
-              NyumbaLink is a property verification platform, not a classifieds board. Every listing carries a permanent
-              property ID, verification history, live availability and a public trust record.
-            </p>
+            <HeroIn delay={0}>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">Verified homes. Real locations.</p>
+            </HeroIn>
+            <HeroIn delay={0.08}>
+              <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight text-white lg:text-5xl">
+                Find a real place. See the real location. Verify before you pay.
+              </h1>
+            </HeroIn>
+            <HeroIn delay={0.16}>
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-300">
+                NyumbaLink is a property verification platform, not a classifieds board. Every listing carries a permanent
+                property ID, verification history, live availability and a public trust record.
+              </p>
+            </HeroIn>
 
+            <HeroIn delay={0.24}>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 navigate(`/explore?q=${encodeURIComponent(q.trim())}`);
               }}
-              className="mt-8 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+              className="mt-8 rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-xl"
             >
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
                 <Search className="h-4 w-4 text-slate-400" aria-hidden />
@@ -105,27 +116,30 @@ export default function WebHomePage() {
                   <option>2 Bedroom</option>
                   <option>3+ Bedroom</option>
                 </select>
-                <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                <button type="submit" className="btn-sheen rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 active:scale-[0.98]">
                   Search
                 </button>
               </div>
             </form>
+            </HeroIn>
 
-            <dl className="mt-8 grid grid-cols-3 gap-6 border-t border-slate-200 pt-6">
+            <HeroIn delay={0.32}>
+            <dl className="mt-8 grid grid-cols-3 gap-6 border-t border-white/15 pt-6">
               {[
                 ['Verified listings', verified.length],
                 ['Live availability', all.reduce((s, p) => s + p.availableUnits, 0)],
                 ['Towns covered', new Set(all.map((p) => p.town)).size],
               ].map(([label, value]) => (
                 <div key={label as string}>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
-                  <dd className="mt-1 text-2xl font-bold text-slate-900">{value as number}</dd>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-300">{label}</dt>
+                  <dd className="mt-1 text-2xl font-bold text-white"><CountUp value={value as number} /></dd>
                 </div>
               ))}
             </dl>
+            </HeroIn>
           </div>
 
-          <div className="h-[420px] overflow-hidden rounded-xl border border-slate-200 lg:h-auto">
+          <div className="h-[420px] overflow-hidden rounded-2xl border border-white/20 shadow-2xl lg:h-auto">
             <MapCanvas
               properties={all}
               selectedId={null}
@@ -144,13 +158,27 @@ export default function WebHomePage() {
         </div>
       </section>
 
+      <div className="marquee-mask overflow-hidden border-b border-slate-200 bg-white py-3" aria-hidden>
+        <div className="animate-marquee flex w-max items-center gap-8 pr-8">
+          {[...new Set(all.map((p) => p.town).filter(Boolean)), ...new Set(all.map((p) => p.town).filter(Boolean))].map((town, i) => (
+            <span key={`${town}-${i}`} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500">
+              <MapPin className="h-3.5 w-3.5 text-primary" /> {town}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <section className="mx-auto grid max-w-7xl gap-6 px-6 py-12 md:grid-cols-3">
-        {PILLARS.map(({ Icon, title, body }) => (
-          <div key={title} className="rounded-xl border border-slate-200 p-6">
-            <Icon className="h-5 w-5 text-teal-700" aria-hidden />
+        {PILLARS.map(({ Icon, title, body }, i) => (
+          <Reveal key={title} delay={i * 0.08}>
+          <div className="card-lift h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <span className="inline-grid h-10 w-10 place-items-center rounded-xl bg-orange-100 transition-transform duration-300 hover:rotate-6 hover:scale-110">
+              <Icon className="h-5 w-5 text-primary" aria-hidden />
+            </span>
             <h2 className="mt-3 font-semibold text-slate-900">{title}</h2>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{body}</p>
           </div>
+          </Reveal>
         ))}
       </section>
 
@@ -170,15 +198,19 @@ export default function WebHomePage() {
           { Icon: Building2, title: 'List your property', body: 'Register, verify your identity and publish real availability.', to: '/register' },
           { Icon: GraduationCap, title: 'Student housing', body: 'Verify your student status and match hostels by campus and budget.', to: '/explore' },
           { Icon: Megaphone, title: 'Advertise with NyumbaLink', body: 'Reach movers with clearly labelled sponsored placements.', to: '/contact' },
-        ].map(({ Icon, title, body, to }) => (
-          <Link key={title} to={to} className="rounded-xl border border-slate-200 p-6 transition-colors hover:border-slate-300">
-            <Icon className="h-5 w-5 text-slate-900" aria-hidden />
+        ].map(({ Icon, title, body, to }, i) => (
+          <Reveal key={title} delay={i * 0.08}>
+          <Link to={to} className="group block h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md card-lift">
+            <span className="inline-grid h-10 w-10 place-items-center rounded-xl bg-secondary">
+              <Icon className="h-5 w-5 text-white" aria-hidden />
+            </span>
             <h2 className="mt-3 font-semibold text-slate-900">{title}</h2>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{body}</p>
-            <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-teal-700">
-              Continue <ArrowRight className="h-4 w-4" aria-hidden />
+            <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:gap-2 group-hover:text-primary/80 transition-all">
+              Continue <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
             </span>
           </Link>
+          </Reveal>
         ))}
       </section>
     </>

@@ -19,7 +19,18 @@ export default function PropertiesPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['properties', filters],
-    queryFn: () => propertiesApi.list(filters),
+    queryFn: () => {
+      const params: any = {
+        page: filters.page,
+        page_size: filters.page_size,
+      };
+      if (filters.property_type) params.property_type = filters.property_type;
+      if (filters.county) params.county = filters.county;
+      if (filters.verified_only) params.verified_only = true;
+      if (filters.min_price) params.min_price = parseFloat(filters.min_price);
+      if (filters.max_price) params.max_price = parseFloat(filters.max_price);
+      return propertiesApi.list(params);
+    },
   });
 
   const properties = data?.data || [];

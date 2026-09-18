@@ -24,8 +24,9 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const url = originalRequest?.url || '';
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !url.includes('/auth/')) {
       originalRequest._retry = true;
       const refreshToken = localStorage.getItem('refresh_token');
 
@@ -74,6 +75,9 @@ export const propertiesApi = {
   create: (data: any) => api.post('/properties', data),
   update: (id: string, data: any) => api.put(`/properties/${id}`, data),
   delete: (id: string) => api.delete(`/properties/${id}`),
+  addBuilding: (propertyId: string, data: any) => api.post(`/properties/${propertyId}/buildings`, data),
+  addFloor: (buildingId: string, data: any) => api.post(`/properties/buildings/${buildingId}/floors`, data),
+  addRoom: (floorId: string, data: any) => api.post(`/properties/floors/${floorId}/rooms`, data),
 };
 
 export const roomsApi = {
@@ -97,7 +101,7 @@ export const bookingsApi = {
   checkIn: (id: string, data: any) =>
     api.post(`/bookings/${id}/check-in`, data),
   cancel: (id: string, reason?: string) =>
-    api.post(`/bookings/${id}/cancel`, { reason }),
+    api.post(`/bookings/${id}/cancel`, null, { params: reason ? { reason } : undefined }),
 };
 
 export const verificationApi = {
@@ -107,10 +111,27 @@ export const verificationApi = {
     api.post('/verification/photos/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  uploadVideo: (formData: FormData) =>
+    api.post('/verification/video/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   approvePhoto: (photoId: string) =>
     api.post(`/verification/photos/${photoId}/approve`),
-  rejectPhoto: (photoId: string, reason: string) =>
-    api.post(`/verification/photos/${photoId}/reject`, { reason }),
+  rejectPhoto: (photoId: string, reason: string) => {
+    const form = new FormData();
+    form.append('reason', reason);
+    return api.post(`/verification/photos/${photoId}/reject`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  approveVideo: (videoId: string) => api.post(`/verification/video/${videoId}/approve`),
+  rejectVideo: (videoId: string, reason: string) => {
+    const form = new FormData();
+    form.append('reason', reason);
+    return api.post(`/verification/video/${videoId}/reject`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   verifyProperty: (propertyId: string) =>
     api.post(`/verification/property/${propertyId}/verify`),
 };
@@ -156,6 +177,7 @@ export interface Booking {
 
 export const favoritesApi = {
   list: (params?: any) => api.get('/favorites', { params }),
+  status: (propertyId: string) => api.get(`/favorites/${propertyId}/status`),
   add: (propertyId: string) => api.post(`/favorites/${propertyId}`),
   remove: (propertyId: string) => api.delete(`/favorites/${propertyId}`),
 };
@@ -166,16 +188,20 @@ export const analyticsApi = {
   getOwnerDashboard: (params?: any) =>
     api.get('/analytics/owner/dashboard', { params }),
   trackView: (propertyId: string) =>
-    api.post('/analytics/track/view', { property_id: propertyId }),
+    api.post('/analytics/track/view', null, { params: { property_id: propertyId } }),
   trackClick: (propertyId: string, clickType: string) =>
-    api.post('/analytics/track/click', { property_id: propertyId, click_type: clickType }),
+    api.post('/analytics/track/click', null, { params: { property_id: propertyId, click_type: clickType } }),
 };
 
 export const adminApi = {
   getDashboard: () => api.get('/admin/dashboard'),
-  listUsers: (params?: any) => api.get('/admin/users', { params }),
+  getAnalyticsOverview: (days?: number) => api.get('/admin/analytics/overview', { params: days ? { days } : undefined }),
+  listUsers: (params?: any) => {
+    const res = api.get('/admin/users', { params });
+    return res;
+  },
   updateUserRole: (userId: string, role: string) =>
-    api.put(`/admin/users/${userId}/role`, { role }),
+    api.put(`/admin/users/${userId}/role`, null, { params: { role } }),
   toggleUserActive: (userId: string) =>
     api.put(`/admin/users/${userId}/toggle-active`),
   getVerificationQueue: (params?: any) =>
@@ -183,17 +209,30 @@ export const adminApi = {
   listScamReports: (params?: any) =>
     api.get('/admin/scam-reports', { params }),
   resolveScamReport: (reportId: string, action: string, notes?: string) =>
-    api.put(`/admin/scam-reports/${reportId}/resolve`, { action, notes }),
+    api.put(`/admin/scam-reports/${reportId}/resolve`, null, { params: { action, notes } }),
   listProperties: (params?: any) =>
     api.get('/admin/properties', { params }),
 };
 
 export const paymentsApi = {
   getHistory: () => api.get('/payments/history'),
+  paymentStatus: (paymentId: string) => api.get(`/payments/mpesa/status/${paymentId}`),
   stkPush: (amount: number, phone: string, paymentType: string) =>
-    api.post('/payments/mpesa/stk-push', { amount, phone, payment_type: paymentType }),
-  subscribePremium: (planType: string, amount: number) =>
-    api.post('/payments/premium/subscribe', { plan_type: planType, amount }),
+    api.post('/payments/mpesa/stk-push', null, { params: { amount, phone, payment_type: paymentType } }),
+  subscribePremium: (planType: string, amount: number, phone?: string) =>
+    api.post('/payments/premium/subscribe', null, { params: { plan_type: planType, amount, ...(phone ? { phone } : {}) } }),
+};
+
+export const reviewsApi = {
+  list: (propertyId: string, params?: any) => api.get(`/reviews/property/${propertyId}`, { params }),
+  create: (propertyId: string, data: { overall_rating: number; title?: string; comment?: string }) =>
+    api.post(`/reviews/property/${propertyId}`, data),
+  health: (propertyId: string) => api.get(`/reviews/health/${propertyId}`),
+};
+
+export const reportsApi = {
+  create: (propertyId: string, data: any) => api.post(`/reports/properties/${propertyId}/reports`, data),
+  status: (propertyId: string) => api.get(`/reports/properties/${propertyId}/reports/status`),
 };
 
 export const chatApi = {

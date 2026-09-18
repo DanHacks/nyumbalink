@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func, update, case
 from app.models.property import (
     Property, Building, Floor, Room, PropertyStatus, OccupancyStatus,
 )

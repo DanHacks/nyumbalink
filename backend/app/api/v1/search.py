@@ -119,6 +119,7 @@ async def smart_search(
             lat_out, lon_out, visibility = await visible_coordinates(db, prop, current_user)
         results.append({
             "id": room.id,
+            "property_id": room.property_id,
             "room_number": room.room_number,
             "house_type": room.house_type.value if hasattr(room.house_type, 'value') else room.house_type,
             "rent_amount": room.rent_amount,
@@ -195,7 +196,7 @@ async def price_categories(
     )
     total, avg_rent = bands_result.first()
 
-    def band_count(cond):
+    async def band_count(cond):
         sub = select(func.count(Room.id)).join(
             Property, Room.property_id == Property.id
         ).where(
@@ -206,7 +207,7 @@ async def price_categories(
             Room.occupancy_status == OccupancyStatus.VACANT,
             cond,
         )
-        return (db.execute(sub)).scalar() or 0
+        return (await db.execute(sub)).scalar() or 0
 
     if not median:
         return {
@@ -274,6 +275,9 @@ async def autocomplete(
         select(Property.city).where(
             Property.city.ilike(f"%{q}%"),
             Property.status == PropertyStatus.VERIFIED,
+            Property.is_active == True,
+            Property.is_archived == False,
+            blacklist_exclusion(),
         ).distinct().limit(5)
     )
     cities = [row[0] for row in city_result.all()]
@@ -282,14 +286,30 @@ async def autocomplete(
         select(Property.county).where(
             Property.county.ilike(f"%{q}%"),
             Property.status == PropertyStatus.VERIFIED,
+            Property.is_active == True,
+            Property.is_archived == False,
+            blacklist_exclusion(),
         ).distinct().limit(5)
     )
     counties = [row[0] for row in county_result.all()]
+
+    landmark_result = await db.execute(
+        select(Property.landmark).where(
+            Property.landmark.ilike(f"%{q}%"),
+            Property.landmark.is_not(None),
+            Property.status == PropertyStatus.VERIFIED,
+            Property.is_active == True,
+            Property.is_archived == False,
+            blacklist_exclusion(),
+        ).distinct().limit(5)
+    )
+    landmarks = [row[0] for row in landmark_result.all()]
 
     return {
         "suggestions": {
             "properties": properties,
             "cities": cities,
             "counties": counties,
+            "landmarks": landmarks,
         }
     }

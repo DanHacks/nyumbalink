@@ -35,8 +35,14 @@ async def list_notifications(
         )
     )).scalar() or 0
 
+    total = (await db.execute(
+        select(func.count(Notification.id)).where(
+            Notification.user_id == current_user.id,
+        )
+    )).scalar() or 0
+
     return {
-        "total": unread_count,
+        "total": total,
         "page": page,
         "page_size": page_size,
         "unread_count": unread_count,

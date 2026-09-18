@@ -8,6 +8,12 @@ export default function CreatePropertyPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [buildingId, setBuildingId] = useState<string | null>(null);
+  const [floorId, setFloorId] = useState<string | null>(null);
+  const [buildingName, setBuildingName] = useState('');
+  const [floorNumber, setFloorNumber] = useState('0');
+  const [room, setRoom] = useState({ room_number: '', house_type: 'bedsitter', rent_amount: '', deposit_amount: '' });
   const [formData, setFormData] = useState({
     property_type: 'apartment',
     property_name: '',
@@ -31,13 +37,49 @@ export default function CreatePropertyPage() {
   const mutation = useMutation({
     mutationFn: (data: any) => propertiesApi.create(data),
     onSuccess: (response) => {
-      toast.success('Property created successfully!');
+      toast.success('Property created! Now add a building.');
       queryClient.invalidateQueries({ queryKey: ['properties'] });
-      navigate(`/properties/${response.data.id}`);
+      setCreatedId(response.data.id);
+      setStep(4);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || 'Failed to create property');
     },
+  });
+
+  const buildingMutation = useMutation({
+    mutationFn: () => propertiesApi.addBuilding(createdId!, { building_name: buildingName || 'Main Building', total_floors: 1 }),
+    onSuccess: (res) => {
+      toast.success('Building added! Now add a floor.');
+      setBuildingId(res.data.id);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Failed to add building'),
+  });
+
+  const floorMutation = useMutation({
+    mutationFn: () => propertiesApi.addFloor(buildingId!, { floor_number: parseInt(floorNumber) || 0 }),
+    onSuccess: (res) => {
+      toast.success('Floor added! Now add rooms.');
+      setFloorId(res.data.id);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Failed to add floor'),
+  });
+
+  const roomMutation = useMutation({
+    mutationFn: () =>
+      propertiesApi.addRoom(floorId!, {
+        building_id: buildingId,
+        floor_id: floorId,
+        room_number: room.room_number,
+        house_type: room.house_type,
+        rent_amount: parseFloat(room.rent_amount),
+        deposit_amount: room.deposit_amount ? parseFloat(room.deposit_amount) : undefined,
+      }),
+    onSuccess: () => {
+      toast.success('Room added!');
+      setRoom({ room_number: '', house_type: 'bedsitter', rent_amount: '', deposit_amount: '' });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Failed to add room'),
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,7 +117,7 @@ export default function CreatePropertyPage() {
       <h1 className="text-3xl font-bold mb-8">List Your Property</h1>
 
       <div className="flex items-center space-x-4 mb-8">
-        {[1, 2, 3].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center">
             <div
               className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -84,7 +126,7 @@ export default function CreatePropertyPage() {
             >
               {s}
             </div>
-            {s < 3 && <div className={`h-1 w-12 ${step > s ? 'bg-primary' : 'bg-gray-200'}`} />}
+            {s < 4 && <div className={`h-1 w-12 ${step > s ? 'bg-primary' : 'bg-gray-200'}`} />}
           </div>
         ))}
       </div>
@@ -297,7 +339,7 @@ export default function CreatePropertyPage() {
             </div>
 
             <p className="text-sm text-gray-600">
-              After creating the property, you will be able to add buildings, floors, rooms, and upload verification photos.
+              After creating the property, you will add a building, floor, and rooms on the next step.
             </p>
 
             <div className="flex space-x-4">
@@ -317,6 +359,54 @@ export default function CreatePropertyPage() {
               </button>
             </div>
           </>
+        )}
+
+        {step === 4 && createdId && (
+          <div className="space-y-6">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm">
+              Property created. Add at least one building, one floor, and one room so tenants can book.
+            </div>
+
+            {!buildingId ? (
+              <div className="space-y-3">
+                <h3 className="font-semibold">Step 4a — Building</h3>
+                <input value={buildingName} onChange={(e) => setBuildingName(e.target.value)} placeholder="Building name (e.g. Block A)" className="w-full px-4 py-3 border rounded-lg" />
+                <button type="button" disabled={buildingMutation.isPending} onClick={() => buildingMutation.mutate()} className="w-full py-3 bg-primary text-white rounded-lg font-semibold disabled:opacity-50">
+                  {buildingMutation.isPending ? 'Saving...' : 'Save building'}
+                </button>
+              </div>
+            ) : !floorId ? (
+              <div className="space-y-3">
+                <h3 className="font-semibold">Step 4b — Floor</h3>
+                <input value={floorNumber} onChange={(e) => setFloorNumber(e.target.value)} placeholder="Floor number (0 = ground)" type="number" className="w-full px-4 py-3 border rounded-lg" />
+                <button type="button" disabled={floorMutation.isPending} onClick={() => floorMutation.mutate()} className="w-full py-3 bg-primary text-white rounded-lg font-semibold disabled:opacity-50">
+                  {floorMutation.isPending ? 'Saving...' : 'Save floor'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <h3 className="font-semibold">Step 4c — Rooms (add as many as you need)</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={room.room_number} onChange={(e) => setRoom({ ...room, room_number: e.target.value })} placeholder="Room no. e.g. A1" className="px-4 py-3 border rounded-lg" />
+                  <select value={room.house_type} onChange={(e) => setRoom({ ...room, house_type: e.target.value })} className="px-4 py-3 border rounded-lg">
+                    <option value="bedsitter">Bedsitter</option>
+                    <option value="one_bedroom">One Bedroom</option>
+                    <option value="two_bedroom">Two Bedroom</option>
+                    <option value="single_room">Single Room</option>
+                    <option value="studio">Studio</option>
+                  </select>
+                  <input value={room.rent_amount} onChange={(e) => setRoom({ ...room, rent_amount: e.target.value })} placeholder="Rent (KES)" type="number" className="px-4 py-3 border rounded-lg" />
+                  <input value={room.deposit_amount} onChange={(e) => setRoom({ ...room, deposit_amount: e.target.value })} placeholder="Deposit (optional)" type="number" className="px-4 py-3 border rounded-lg" />
+                </div>
+                <button type="button" disabled={roomMutation.isPending || !room.room_number || !room.rent_amount} onClick={() => roomMutation.mutate()} className="w-full py-3 bg-primary text-white rounded-lg font-semibold disabled:opacity-50">
+                  {roomMutation.isPending ? 'Saving...' : 'Add room'}
+                </button>
+                <button type="button" onClick={() => navigate(`/properties/${createdId}`)} className="w-full py-3 border rounded-lg font-semibold hover:bg-gray-50">
+                  Finish — view property
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </form>
     </div>
