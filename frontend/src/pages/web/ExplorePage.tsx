@@ -170,7 +170,7 @@ export default function ExplorePage() {
         <>
           <p className="mb-4 text-sm text-slate-500">
             {isLoading ? 'Loading verified homes…' : `${results.length} verified homes`}
-            {data?.source === 'demo' && ' • development seed data (API offline)'}
+            {data?.backendDown && ' • could not reach the server'}
           </p>
 
           <div className={cn('grid gap-6', layout === 'split' && 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]')}>

@@ -483,7 +483,7 @@ export default function MapHomePage() {
             </h2>
             <p className="text-xs text-slate-500">
               {isLoading ? 'Loading verified homes…' : `${listed.length} verified homes`}
-              {data?.source === 'demo' && ' • demo data (API offline)'}
+              {data?.backendDown && ' • could not reach the server'}
               {isFetching && !isLoading && ' • updating'}
             </p>
           </div>

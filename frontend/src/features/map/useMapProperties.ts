@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { demoProperties } from './demoProperties';
 import type { MapProperty, PropertyKind, VerificationLevel } from './types';
 import type { Viewport } from './MapCanvas';
 
@@ -8,9 +7,9 @@ import type { Viewport } from './MapCanvas';
  * Viewport-scoped query. The backend (FastAPI + PostGIS) owns the geospatial
  * search — the client only sends bounds + zoom + filters.
  *
- * Demo fallback policy: demo seed data is used ONLY when the backend is
- * unreachable (network error). A legitimately empty area returns an empty
- * result — it is never replaced with demo listings.
+ * No mock data: listings always come from the live API. Any failure returns
+ * an empty result with backendDown=true so the UI shows an offline/empty
+ * state instead of fake pins.
  */
 
 const KIND_MAP: Record<string, PropertyKind> = {
@@ -65,16 +64,6 @@ function mapLiveProperty(raw: any): MapProperty {
   };
 }
 
-function isNetworkError(error: any): boolean {
-  if (!error) return true;
-  return (
-    !error.response ||
-    error.code === 'ECONNABORTED' ||
-    error.code === 'ERR_NETWORK' ||
-    error.message === 'Network Error'
-  );
-}
-
 export function useMapProperties(viewport: Viewport | null) {
   const key = viewport
     ? [viewport.south, viewport.west, viewport.north, viewport.east].map((n) => n.toFixed(2)).join(',')
@@ -97,17 +86,8 @@ export function useMapProperties(viewport: Viewport | null) {
         });
         const rawItems: any[] = res.data?.properties ?? [];
         return { items: rawItems.map(mapLiveProperty), source: 'live' as const, backendDown: false };
-      } catch (error: any) {
-        // Demo seed data only when the backend is unreachable (network error).
-        // HTTP errors (400/401/422/500) return empty so server issues stay visible.
-        if (!isNetworkError(error)) {
-          return { items: [], source: 'live' as const, backendDown: false };
-        }
-        return {
-          items: demoProperties,
-          source: 'demo' as const,
-          backendDown: true,
-        };
+      } catch {
+        return { items: [], source: 'live' as const, backendDown: true };
       }
     },
     placeholderData: (prev) => prev,
