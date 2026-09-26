@@ -2,6 +2,7 @@
   "name": "nyumbalink-frontend",
   "private": true,
   "version": "1.0.0",
+  "license": "(MIT OR Apache-2.0 OR GPL-3.0-only OR AGPL-3.0-only)",
   "type": "module",
   "scripts": {
     "dev": "vite",
