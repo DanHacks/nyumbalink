@@ -1,0 +1,22 @@
+# Local overrides for a LAN / self-hosted deployment.
+#
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+#   # edit the values below
+#   docker compose up -d
+#
+# docker-compose.override.yml is git-ignored so real secrets never get committed.
+services:
+  api:
+    environment:
+      # REQUIRED — JWT signing + media URL HMAC. Generate: openssl rand -hex 48
+      SECRET_KEY: change-me-to-a-long-random-string
+      # Browser origins allowed to call the API (JSON array).
+      CORS_ORIGINS: '["http://localhost:5173", "https://nyumba.hytechsolution.co.ke"]'
+      GOOGLE_CLIENT_ID: 319632867370-2pdu6p82056qpo7tho0snf9v3k2globi.apps.googleusercontent.com
+      GOOGLE_MAPS_API_KEY: AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc
+      # Public URL of the API — used for M-Pesa callbacks.
+      BACKEND_PUBLIC_URL: https://nyumba.hytechsolution.co.ke
+
+  celery_worker:
+    environment:
+      SECRET_KEY: change-me-to-a-long-random-string
