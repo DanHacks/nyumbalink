@@ -11,6 +11,14 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Hostnames the dev server may be reached through (LAN IP, reverse proxy, tunnel domain).
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      '192.168.150.171',
+      'nyumba.hytechsolution.co.ke',
+      '.hytechsolution.co.ke',
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
