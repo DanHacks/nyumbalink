@@ -50,6 +50,15 @@ export default function PropertyDetailPage() {
     }
   }, [id]);
 
+  // Derived state — these MUST stay above the early returns below: React hooks
+  // may not be called conditionally (rules of hooks).
+  const prop = property?.data;
+  const isFav = !!favStatus?.data?.is_favorite;
+  const rooms = useMemo(
+    () => (prop?.buildings || []).flatMap((b: any) => (b.floors || []).flatMap((f: any) => (f.rooms || []).map((r: any) => ({ ...r, building_name: b.building_name })))),
+    [prop],
+  );
+
   const bookingMutation = useMutation({
     mutationFn: (data: any) => bookingsApi.create(data),
     onSuccess: () => {
@@ -145,8 +154,6 @@ export default function PropertyDetailPage() {
     );
   }
 
-  const prop = property?.data;
-
   if (!prop) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
@@ -158,12 +165,7 @@ export default function PropertyDetailPage() {
     );
   }
 
-  const isFav = !!favStatus?.data?.is_favorite;
   const isOwnerView = isAuthenticated && user && (user.id === prop.owner?.id || ['owner', 'caretaker', 'agent', 'host', 'manager'].includes(user.role || ''));
-  const rooms = useMemo(
-    () => (prop.buildings || []).flatMap((b: any) => (b.floors || []).flatMap((f: any) => (f.rooms || []).map((r: any) => ({ ...r, building_name: b.building_name })))),
-    [prop],
-  );
   const reviews = reviewsData?.data?.reviews ?? [];
 
   return (
