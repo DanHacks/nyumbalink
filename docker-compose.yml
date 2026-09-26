@@ -3,6 +3,7 @@ version: '3.9'
 services:
   db:
     image: postgis/postgis:16-3.4
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -19,6 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
@@ -30,6 +32,7 @@ services:
       retries: 5
 
   api:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -49,6 +52,7 @@ services:
       - uploads_data:/app/uploads
 
   frontend:
+    restart: unless-stopped
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -63,6 +67,7 @@ services:
       - /app/node_modules
 
   celery_worker:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: Dockerfile
