@@ -107,17 +107,22 @@ export default function MapHomePage() {
     return () => { cancelled = true; };
   }, [submitted, parsed.place]);
 
-  function locate() {
+  /** Ask for GPS without moving the map (used when a route is opened). */
+  function requestLocation(onFound?: (c: [number, number]) => void) {
     if (!('geolocation' in navigator)) { setLocationError('Location is not supported on this device.'); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const c: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        setUserLocation(c); setFlyTarget(c); setMode('near'); setLocationError(null);
-        setViewport(viewportAround(c));
+        setUserLocation(c); setLocationError(null);
+        onFound?.(c);
       },
       () => setLocationError('Location access is optional. Search manually or choose an area.'),
       { enableHighAccuracy: true, timeout: 8000 },
     );
+  }
+
+  function locate() {
+    requestLocation((c) => { setFlyTarget(c); setMode('near'); setViewport(viewportAround(c)); });
   }
 
   // Uber-style: center on the tenant as soon as the screen opens —
@@ -149,9 +154,12 @@ export default function MapHomePage() {
 
   function openDirections(p: MapProperty) {
     const origin: [number, number] = userLocation ?? viewport?.center ?? [-0.0917, 34.768];
+    // No fix yet? Ask for one — the route re-anchors as soon as it arrives.
+    if (!userLocation) requestLocation();
     setRouteTarget(p);
     setRouteMode('driving');
     setRouteResult(null);
+    setRouteLoading(true);
     setRoute({ origin, destination: [p.lat, p.lng], mode: 'driving' });
   }
 
@@ -159,15 +167,31 @@ export default function MapHomePage() {
     setRoute(null);
     setRouteTarget(null);
     setRouteResult(null);
+    setRouteLoading(false);
   }
 
+  // Live tracking while a route is open: the blue dot follows the tenant and the
+  // route is recalculated from the new position (>= 20 m movement, no jitter).
+  const routeActive = route !== null;
   useEffect(() => {
-    if (!routeTarget) return;
-    setRouteLoading(true);
-    setRouteResult(null);
-    const t = setTimeout(() => setRouteLoading(false), 4000);
-    return () => clearTimeout(t);
-  }, [route, routeTarget]);
+    if (!routeActive || !('geolocation' in navigator)) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const next: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        setUserLocation((prev) => (prev && distanceKm(prev, next) < 0.02 ? prev : next));
+      },
+      () => { /* permission denied / no fix — keep the last known origin */ },
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [routeActive]);
+
+  // Re-anchor the route origin as soon as a fix arrives (or the tenant moves).
+  useEffect(() => {
+    if (!route || !userLocation) return;
+    if (route.origin[0] === userLocation[0] && route.origin[1] === userLocation[1]) return;
+    setRoute((r) => (r ? { ...r, origin: userLocation } : r));
+  }, [route, userLocation]);
 
   const results = useMemo(() => {
     const q = submitted.toLowerCase();
@@ -440,6 +464,7 @@ export default function MapHomePage() {
           mode={routeMode}
           onModeChange={(m) => {
             setRouteMode(m);
+            setRouteLoading(true);
             setRoute((r) => (r ? { ...r, mode: m } : r));
           }}
           result={routeResult}

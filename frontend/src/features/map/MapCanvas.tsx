@@ -195,6 +195,10 @@ function RoutingLayer({
 }) {
   const map = useMap();
   const layersRef = useRef<L.LayerGroup | null>(null);
+  // Keep the callback in a ref: the parent passes an inline arrow, so putting it
+  // in the effect deps would re-run the effect on every render (route flash/flicker).
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
 
   useEffect(() => {
     if (!layersRef.current) {
@@ -204,15 +208,21 @@ function RoutingLayer({
     group.clearLayers();
 
     if (!route) {
-      onResult(null);
+      onResultRef.current(null);
       return;
     }
 
     let cancelled = false;
     const { origin, destination, mode } = route;
-    const profile = mode === 'walking' ? 'foot' : 'driving';
     const [oLon, oLat] = [origin[1], origin[0]];
     const [dLon, dLat] = [destination[1], destination[0]];
+    // The public OSRM demo server only routes cars; foot routes come from the
+    // routed-foot instance (path profile is still /driving/ on that host).
+    const routerUrl =
+      mode === 'walking'
+        ? 'https://routing.openstreetmap.de/routed-foot/route/v1/driving'
+        : 'https://router.project-osrm.org/route/v1/driving';
+    const query = '?overview=full&geometries=geojson&steps=false';
 
     const drawStraightLine = () => {
       const km = haversineKm(origin, destination);
@@ -226,7 +236,7 @@ function RoutingLayer({
       }).addTo(group);
       L.marker(origin, { icon: originIcon }).addTo(group);
       L.marker(destination, { icon: destinationIcon }).addTo(group);
-      onResult({
+      onResultRef.current({
         distanceKm: km,
         durationMin: (km / speed) * 60,
         coordinates: coords,
@@ -234,10 +244,7 @@ function RoutingLayer({
       });
     };
 
-    fetch(
-      `https://router.project-osrm.org/route/v1/${profile}/${oLon},${oLat};${dLon},${dLat}?overview=full&geometries=geojson&steps=false`,
-      { signal: AbortSignal.timeout(9000) },
-    )
+    fetch(`${routerUrl}/${oLon},${oLat};${dLon},${dLat}${query}`, { signal: AbortSignal.timeout(9000) })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('router unavailable'))))
       .then((json) => {
         if (cancelled) return;
@@ -254,7 +261,7 @@ function RoutingLayer({
         }).addTo(group);
         L.marker(origin, { icon: originIcon }).addTo(group);
         L.marker(destination, { icon: destinationIcon }).addTo(group);
-        onResult({
+        onResultRef.current({
           distanceKm: routeData.distance / 1000,
           durationMin: routeData.duration / 60,
           coordinates: coords,
@@ -269,7 +276,7 @@ function RoutingLayer({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route?.origin?.[0], route?.origin?.[1], route?.destination?.[0], route?.destination?.[1], route?.mode, map, onResult]);
+  }, [route?.origin?.[0], route?.origin?.[1], route?.destination?.[0], route?.destination?.[1], route?.mode, map]);
 
   return null;
 }

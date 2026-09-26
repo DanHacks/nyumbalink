@@ -64,11 +64,11 @@ export default function DirectionsPanel({
         </div>
 
         <div className="space-y-2 p-3">
-          {loading && (
+          {loading || !result ? (
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" /> Calculating route…
             </div>
-          )}
+          ) : null}
 
           {!loading && result && (
             <>

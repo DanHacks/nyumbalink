@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { formatCurrency, formatTimeAgo } from '@/lib/utils';
 import {
   MapPin, Home, Shield, Star, Clock, Users, ChevronLeft,
-  Calendar, Share2, Bookmark, Flag, MessageSquare,
+  Calendar, Share2, Bookmark, Flag, MessageSquare, Navigation,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -208,6 +208,23 @@ export default function PropertyDetailPage() {
                   className="p-2 rounded-lg border hover:bg-gray-50"
                 >
                   <Share2 className="h-5 w-5" />
+                </button>
+                <button
+                  title="Directions"
+                  onClick={() => {
+                    if (prop.latitude == null || prop.longitude == null) {
+                      toast.error('No location for this property yet');
+                      return;
+                    }
+                    window.open(
+                      `https://www.google.com/maps/dir/?api=1&destination=${prop.latitude},${prop.longitude}`,
+                      '_blank',
+                      'noopener,noreferrer',
+                    );
+                  }}
+                  className="p-2 rounded-lg border hover:bg-gray-50"
+                >
+                  <Navigation className="h-5 w-5" />
                 </button>
                 <button
                   title={isFav ? 'Remove from saved' : 'Save'}
