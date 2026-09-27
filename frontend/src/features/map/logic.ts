@@ -76,6 +76,12 @@ export function clusterProperties(items: MapProperty[], zoom: number): Cluster[]
 
 export interface ParsedQuery {
   text: string;
+  /**
+   * Free-text left AFTER stripping structured tokens (price phrases, place
+   * phrases). Used for matching against listing text so queries like
+   * "under 12000" or "bedsitter under 8000" don't literal-match nothing.
+   */
+  keywords: string;
   maxPrice?: number;
   minPrice?: number;
   houseType?: string;
@@ -107,7 +113,7 @@ const SERVICE_WORDS: [RegExp, string][] = [
 /** Lightweight natural-language search: "bedsitter under 8000 near Kisii University". */
 export function parseQuery(raw: string): ParsedQuery {
   const text = raw.trim();
-  const out: ParsedQuery = { text, services: [] };
+  const out: ParsedQuery = { text, keywords: text, services: [] };
   const under = text.match(/(?:under|below|less than|max)\s*(?:kes|ksh)?\s*([\d,]+)\s*(k)?/i);
   if (under) out.maxPrice = Number(under[1].replace(/,/g, '')) * (under[2] ? 1000 : 1);
   const over = text.match(/(?:over|above|from|min)\s*(?:kes|ksh)?\s*([\d,]+)\s*(k)?/i);
@@ -116,5 +122,13 @@ export function parseQuery(raw: string): ParsedQuery {
   for (const [re, label] of SERVICE_WORDS) if (re.test(text)) out.services.push(label);
   const place = text.match(/(?:near|in|around|at)\s+([a-z\s]{3,30})/i);
   if (place) out.place = place[1].trim();
+  // Keywords = whatever the structured parser did not claim. An empty result
+  // means the query was entirely structured (e.g. "under 12000") and the price
+  // filter should stand alone.
+  out.keywords = text
+    .replace(/(?:under|below|less than|max|over|above|from|min)\s*(?:kes|ksh)?\s*[\d,]+\s*k?/gi, ' ')
+    .replace(/(?:near|in|around|at)\s+[a-z\s]{3,30}/i, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   return out;
 }

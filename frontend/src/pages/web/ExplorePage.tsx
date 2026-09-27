@@ -28,7 +28,13 @@ export default function ExplorePage() {
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState(params.get('q') ?? '');
   const [submitted, setSubmitted] = useState(params.get('q') ?? '');
-  const [filters, setFilters] = useState<Filters>(emptyFilters);
+  // Deep links such as /explore?maxPrice=12000 (used by the rent calculator)
+  // seed the price filters straight from the URL.
+  const [filters, setFilters] = useState<Filters>(() => ({
+    ...emptyFilters,
+    minPrice: Number(params.get('minPrice')) || null,
+    maxPrice: Number(params.get('maxPrice')) || null,
+  }));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sort, setSort] = useState<(typeof SORTS)[number]['id']>('recommended');
   const [layout, setLayout] = useState<ListLayout>('split');
@@ -55,12 +61,19 @@ export default function ExplorePage() {
     if (kind) list = list.filter((p) => p.kind === kind);
     const q = submitted.trim().toLowerCase();
     if (q) {
-      list = list.filter((p) =>
-        [p.name, p.estate, p.town, p.county, p.houseType, p.nlId, ...p.services]
-          .join(' ')
-          .toLowerCase()
-          .includes(parsed.place?.toLowerCase() ?? q),
-      );
+      // Match on the place phrase when present, otherwise on the leftover
+      // keywords — a fully structured query ("under 12000") has no keywords
+      // and must filter by price alone instead of matching no text at all.
+      const matchText = (parsed.place ?? parsed.keywords).toLowerCase();
+      const terms = matchText.split(/\s+/).filter(Boolean);
+      if (terms.length) {
+        list = list.filter((p) => {
+          const hay = [p.name, p.estate, p.town, p.county, p.houseType, p.nlId, ...p.services]
+            .join(' ')
+            .toLowerCase();
+          return terms.every((t) => hay.includes(t));
+        });
+      }
       if (parsed.houseType) list = list.filter((p) => p.houseType === parsed.houseType);
       if (parsed.maxPrice) list = list.filter((p) => p.price <= parsed.maxPrice!);
       if (parsed.minPrice) list = list.filter((p) => p.price >= parsed.minPrice!);

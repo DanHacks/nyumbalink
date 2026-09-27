@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, ChevronDown, ShieldCheck, Bell, User, Menu, X } from 'lucide-react';
+import { Search, ChevronDown, Bell, User, Menu, X, Calculator } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
 const PRIMARY = [
   { to: '/', label: 'Home', end: true },
   { to: '/explore', label: 'Explore' },
-  { to: '/saved', label: 'Saved' },
-  { to: '/viewings', label: 'Viewings' },
+  { to: '/universities', label: 'Student Housing' },
+  { to: '/how-it-works', label: 'How it works' },
+  { to: '/about', label: 'About' },
+  { to: '/contact', label: 'Contact' },
 ];
 
 const CATEGORIES = [
   { to: '/explore?kind=rental', label: 'Rentals' },
-  { to: '/universities', label: 'Student Housing' },
   { to: '/explore?kind=hostel', label: 'Hostels' },
+  { to: '/explore?kind=apartment', label: 'Apartments' },
   { to: '/explore?kind=airbnb', label: 'Airbnb' },
   { to: '/explore?kind=guest_house', label: 'Guest Houses' },
-  { to: '/explore?kind=apartment', label: 'Apartments' },
+  { to: '/properties/create', label: 'List your property' },
 ];
 
 export default function WebHeader() {
@@ -88,18 +90,30 @@ export default function WebHeader() {
             )}
           </div>
 
-          <Link to="/dashboard" className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
-            Owner Portal
-          </Link>
-          <Link to="/safety" className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
-            <ShieldCheck className="h-4 w-4" aria-hidden /> Help &amp; Safety
+          {isAuthenticated && (
+            <Link to="/dashboard" className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+              Owner Portal
+            </Link>
+          )}
+          {/* Boma Yangu-style highlighted action in the nav bar */}
+          <Link
+            to="/calculator"
+            className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+          >
+            <Calculator className="h-4 w-4" aria-hidden /> Rent Calculator
           </Link>
         </nav>
 
         <div className="ml-auto hidden shrink-0 items-center gap-2 xl:flex">
-          <button aria-label="Notifications" className="rounded-md p-2 text-slate-500 hover:bg-slate-50">
-            <Bell className="h-[18px] w-[18px]" aria-hidden />
-          </button>
+          {isAuthenticated && user && (
+            <Link
+              to="/notifications"
+              aria-label="Notifications"
+              className="rounded-md p-2 text-slate-500 hover:bg-slate-50"
+            >
+              <Bell className="h-[18px] w-[18px]" aria-hidden />
+            </Link>
+          )}
           {isAuthenticated && user ? (
             <>
               <Link to="/profile" className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800">
@@ -118,10 +132,10 @@ export default function WebHeader() {
           ) : (
             <>
               <Link to="/login" className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:text-slate-900">
-                Sign in
+                Log in
               </Link>
               <Link to="/register" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
-                Get started
+                Register
               </Link>
             </>
           )}
@@ -165,24 +179,40 @@ export default function WebHeader() {
               ))}
             </div>
             <div className="border-t border-slate-100 pt-3">
+              <Link
+                to="/calculator"
+                onClick={() => setMobileOpen(false)}
+                className="mb-2 flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white"
+              >
+                <Calculator className="h-4 w-4" aria-hidden /> Rent affordability calculator
+              </Link>
               {isAuthenticated ? (
-                <button
-                  onClick={async () => {
-                    await logout();
-                    setMobileOpen(false);
-                    navigate('/');
-                  }}
-                  className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Log out
-                </button>
+                <>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Owner Portal
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      await logout();
+                      setMobileOpen(false);
+                      navigate('/');
+                    }}
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Log out
+                  </button>
+                </>
               ) : (
                 <div className="flex gap-2">
                   <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 rounded-md border border-slate-200 px-3 py-2 text-center text-sm font-medium">
-                    Sign in
+                    Log in
                   </Link>
                   <Link to="/register" onClick={() => setMobileOpen(false)} className="flex-1 rounded-md bg-primary px-3 py-2 text-center text-sm font-semibold text-white">
-                    Get started
+                    Register
                   </Link>
                 </div>
               )}

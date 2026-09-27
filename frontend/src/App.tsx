@@ -29,6 +29,7 @@ import NotificationsPage from '@/pages/notifications/NotificationsPage';
 import UniversitiesPage from '@/pages/universities/UniversitiesPage';
 import UniversityDetailPage from '@/pages/universities/UniversityDetailPage';
 import HowItWorksPage from '@/pages/public/HowItWorksPage';
+import RentCalculatorPage from '@/pages/public/RentCalculatorPage';
 import AboutPage from '@/pages/public/AboutPage';
 import SafetyPage from '@/pages/public/SafetyPage';
 import HelpPage from '@/pages/public/HelpPage';
@@ -124,6 +125,7 @@ function DashboardRouter() {
 const PublicRoutes = (
   <>
     <Route path="how-it-works" element={<HowItWorksPage />} />
+    <Route path="calculator" element={<RentCalculatorPage />} />
     <Route path="about" element={<AboutPage />} />
     <Route path="safety" element={<SafetyPage />} />
     <Route path="help" element={<HelpPage />} />
