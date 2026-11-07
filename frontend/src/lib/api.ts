@@ -102,6 +102,20 @@ export const bookingsApi = {
     api.post(`/bookings/${id}/check-in`, data),
   cancel: (id: string, reason?: string) =>
     api.post(`/bookings/${id}/cancel`, null, { params: reason ? { reason } : undefined }),
+  respond: (
+    id: string,
+    data: {
+      action: 'accept' | 'decline' | 'propose';
+      reason?: string;
+      proposed_time_start?: string;
+      proposed_time_end?: string;
+    },
+  ) => api.post(`/bookings/${id}/respond`, data),
+  acceptProposal: (id: string) => api.post(`/bookings/${id}/accept-proposal`),
+  declineProposal: (id: string, reason?: string) =>
+    api.post(`/bookings/${id}/decline-proposal`, null, {
+      params: reason ? { reason } : undefined,
+    }),
 };
 
 export const verificationApi = {
@@ -247,6 +261,7 @@ export const chatApi = {
 
 export const notificationsApi = {
   list: (params?: any) => api.get('/notifications', { params }),
+  unreadCount: () => api.get('/notifications/unread-count'),
   markRead: (id: string) => api.post(`/notifications/${id}/read`),
   markAllRead: () => api.post('/notifications/read-all'),
   getPreferences: () => api.get('/notifications/preferences'),

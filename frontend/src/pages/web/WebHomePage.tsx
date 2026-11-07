@@ -91,10 +91,10 @@ const STEPS = [
   {
     n: 3,
     Icon: KeyRound,
-    title: 'Book & move in',
-    body: 'Request a viewing, get directions, and confirm your booking with M-Pesa. Move in on a documented agreement, then leave a verified-stay review for the next tenant.',
-    bullets: ['Viewings with directions', 'M-Pesa payments', 'Verified-stay reviews'],
-    cta: { label: 'See how it works', to: '/how-it-works' },
+    title: 'Request & meet',
+    body: 'Pick a tier on the map and request a viewing instantly — the owner accepts, declines or suggests a new time in real time. Meet in person, then arrange rent directly. Nothing is paid in the app before you meet.',
+    bullets: ['Instant viewing requests', 'QR check-in at the door', 'No payment until you meet'],
+    cta: { label: 'Request a viewing', to: '/request' },
   },
 ];
 
@@ -332,7 +332,10 @@ export default function WebHomePage() {
             pay a coin — so students and locals move in with confidence, not hope.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/explore" className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
+            <Link to="/request" className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
+              Request a viewing
+            </Link>
+            <Link to="/explore" className="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary">
               Explore homes
             </Link>
             <Link to="/how-it-works" className="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary">

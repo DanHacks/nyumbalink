@@ -9,12 +9,15 @@ from app.api.v1 import (
     analytics, ads, payments, admin, ai, reports, media, favorites,
     notifications, services, chat, universities,
 )
+from app.services import realtime
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    realtime.start_listener(chat.manager)
     yield
+    await realtime.stop_listener()
     await close_db()
 
 

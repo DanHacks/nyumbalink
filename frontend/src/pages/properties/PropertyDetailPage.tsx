@@ -430,17 +430,17 @@ export default function PropertyDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border p-6 sticky top-24">
-            <div className="text-3xl font-bold text-primary mb-1">
+          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-3xl font-extrabold text-secondary mb-1">
               {formatCurrency(prop.min_rent || 0)}
               {prop.max_rent && prop.max_rent !== prop.min_rent
-                ? ` - ${formatCurrency(prop.max_rent)}`
+                ? ` – ${formatCurrency(prop.max_rent)}`
                 : ''}
-              <span className="text-sm text-gray-500 font-normal">/month</span>
+              <span className="text-sm text-slate-500 font-normal">/month</span>
             </div>
 
             {prop.last_vacancy_update && (
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-xs text-slate-500 mb-4">
                 Updated {formatTimeAgo(prop.last_vacancy_update)}
               </p>
             )}
@@ -489,14 +489,14 @@ export default function PropertyDetailPage() {
                     <button
                       type="submit"
                       disabled={bookingMutation.isPending}
-                      className="flex-1 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50"
+                      className="flex-1 rounded-xl bg-slate-900 py-3 font-bold text-white hover:bg-slate-800 disabled:opacity-50"
                     >
-                      {bookingMutation.isPending ? 'Sending...' : 'Confirm Booking'}
+                      {bookingMutation.isPending ? 'Sending...' : 'Request viewing'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowBookingForm(false)}
-                      className="px-4 py-3 border rounded-lg hover:bg-gray-50"
+                      className="rounded-xl border border-slate-200 px-4 py-3 font-semibold text-slate-600 hover:bg-slate-50"
                     >
                       Cancel
                     </button>
@@ -506,15 +506,22 @@ export default function PropertyDetailPage() {
                 <div className="space-y-2">
                   <button
                     onClick={() => setShowBookingForm(true)}
-                    className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90"
+                    className="w-full rounded-xl bg-slate-900 py-3.5 font-bold text-white shadow-sm hover:bg-slate-800"
                   >
                     <Calendar className="h-4 w-4 inline mr-2" />
-                    Book Viewing
+                    Book a viewing
                   </button>
+                  <Link
+                    to="/request"
+                    className="block w-full rounded-xl bg-primary py-3 text-center font-bold text-white hover:bg-primary/90"
+                  >
+                    <Navigation className="h-4 w-4 inline mr-2" />
+                    See similar homes on the map
+                  </Link>
                   <button
                     onClick={() => chatMutation.mutate()}
                     disabled={chatMutation.isPending}
-                    className="w-full py-3 border rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50"
+                    className="w-full rounded-xl border border-slate-200 py-3 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     <MessageSquare className="h-4 w-4 inline mr-2" />
                     {chatMutation.isPending ? 'Starting chat...' : 'Message owner'}
@@ -524,14 +531,15 @@ export default function PropertyDetailPage() {
             ) : (
               <Link
                 to="/login"
-                className="block w-full py-3 bg-primary text-white text-center rounded-lg font-semibold hover:bg-primary/90"
+                className="block w-full rounded-xl bg-primary py-3 text-center font-bold text-white hover:bg-primary/90"
               >
-                Login to Book Viewing
+                Login to book a viewing
               </Link>
             )}
 
-            <div className="mt-4 text-xs text-gray-500 text-center">
-              Book a viewing to see the property in person
+            <div className="mt-4 flex items-start gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] leading-snug text-emerald-800">
+              <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span><span className="font-bold">No payment now.</span> You only pay after you meet the owner in person.</span>
             </div>
 
             {prop.owner && (

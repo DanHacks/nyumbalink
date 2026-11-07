@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.property import Property
 from app.models.chat import ChatConversation, ChatMessage
 from app.services.notification_service import notify
+from app.services import realtime
 
 router = APIRouter()
 
@@ -33,19 +34,25 @@ class ConnectionManager:
             if not conns:
                 self.active.pop(user_id, None)
 
-    async def send_to_user(self, user_id: str, payload: dict):
-        conns = self.active.get(user_id)
-        if not conns:
-            return
+    async def send_local(self, user_ids, payload: dict):
+        """Deliver to sockets held by THIS worker only (called by the pub/sub listener)."""
         data = json.dumps(payload, default=str)
-        dead = []
-        for ws in conns:
-            try:
-                await ws.send_text(data)
-            except Exception:
-                dead.append(ws)
-        for ws in dead:
-            self.disconnect(user_id, ws)
+        for user_id in user_ids:
+            conns = self.active.get(user_id)
+            if not conns:
+                continue
+            dead = []
+            for ws in list(conns):
+                try:
+                    await ws.send_text(data)
+                except Exception:
+                    dead.append(ws)
+            for ws in dead:
+                self.disconnect(user_id, ws)
+
+    async def send_to_user(self, user_id: str, payload: dict):
+        """Deliver to the user wherever their socket lives (single hop via Redis)."""
+        await realtime.publish([user_id], payload)
 
 
 manager = ConnectionManager()

@@ -6,6 +6,8 @@ import WebLayout from '@/components/layout/WebLayout';
 import MobileShell from '@/components/mobile/MobileShell';
 import WebHomePage from '@/pages/web/WebHomePage';
 import ExplorePage from '@/pages/web/ExplorePage';
+import RequestPage from '@/pages/web/RequestPage';
+import { startRealtime, stopRealtime } from '@/lib/realtime';
 import MobileSearchPage from '@/pages/mobile/MobileSearchPage';
 import SavedPage from '@/pages/mobile/SavedPage';
 import ViewingsPage from '@/pages/mobile/ViewingsPage';
@@ -143,11 +145,19 @@ const PublicRoutes = (
 
 export default function App() {
   const initialize = useAuthStore((state) => state.initialize);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // One socket per tab, shared by the request sheet and header badges.
+  useEffect(() => {
+    if (isAuthenticated && accessToken) startRealtime(accessToken);
+    else stopRealtime();
+  }, [isAuthenticated, accessToken]);
 
   if (isMobile) {
     return (
@@ -156,6 +166,7 @@ export default function App() {
         <Route element={<WebLayout />}>
           <Route path="/" element={<WebHomePage />} />
           {PublicRoutes}
+          <Route path="request" element={<RequestPage />} />
         </Route>
 
         <Route path="/map" element={<Navigate to="/explore?view=map" replace />} />
@@ -192,6 +203,7 @@ export default function App() {
       <Route path="/" element={<WebLayout />}>
         <Route index element={<WebHomePage />} />
         {PublicRoutes}
+        <Route path="request" element={<RequestPage />} />
         <Route path="explore" element={<ExplorePage />} />
         <Route path="saved" element={<SavedPage />} />
         <Route path="viewings" element={<ViewingsPage />} />

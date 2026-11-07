@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, SlidersHorizontal, BellPlus, ShieldCheck } from 'lucide-react';
+import { Search, SlidersHorizontal, BellPlus, ShieldCheck, MapPin, ChevronRight } from 'lucide-react';
 import { useAllProperties } from '@/features/map/useAllProperties';
 import { buildTierIndex, parseQuery } from '@/features/map/logic';
 import FilterSheet, { emptyFilters, type Filters } from '@/features/map/FilterSheet';
@@ -108,6 +108,20 @@ export default function MobileSearchPage() {
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <Link
+          to="/request"
+          className="mb-5 flex items-center gap-3 rounded-2xl bg-slate-900 p-3.5 text-white shadow-lg"
+        >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary">
+            <MapPin className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">Request a viewing now</span>
+            <span className="block text-[11px] text-white/60">Pick a tier on the map · no payment until you meet</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
+        </Link>
+
         {!submitted && (
           <section className="mb-5">
             <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Try searching</h2>
@@ -151,8 +165,14 @@ export default function MobileSearchPage() {
           </div>
         )}
 
+        {!submitted && !isLoading && results.length > 0 && (
+          <p className="mb-2 mt-6 text-xs font-bold uppercase tracking-wide text-slate-400">
+            {results.length} verified homes on NyumbaLink
+          </p>
+        )}
+
         <div className="space-y-3">
-          {results.map((p) => (
+          {(submitted ? results : results.slice(0, 8)).map((p) => (
             <div key={p.id}>
               <PropertyPreviewCard p={p} tier={tierOf(p)} compact />
             </div>

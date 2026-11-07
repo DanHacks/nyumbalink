@@ -29,6 +29,13 @@ class BookingResponse(BaseModel):
     house_type: Optional[str] = None
     tenant_notes: Optional[str] = None
     owner_notes: Optional[str] = None
+    # Instant-request lifecycle (stored in booking_metadata, no schema change)
+    expires_at: Optional[datetime] = None
+    requested_at: Optional[datetime] = None
+    responded_at: Optional[datetime] = None
+    decline_reason: Optional[str] = None
+    proposed_time_start: Optional[datetime] = None
+    proposed_time_end: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -37,6 +44,15 @@ class BookingResponse(BaseModel):
 class BookingStatusUpdate(BaseModel):
     status: str
     notes: Optional[str] = None
+
+
+class BookingRespondRequest(BaseModel):
+    """Owner's answer to an instant viewing request."""
+
+    action: str  # accept | decline | propose
+    reason: Optional[str] = None
+    proposed_time_start: Optional[str] = None
+    proposed_time_end: Optional[str] = None
 
 
 class QRCodeResponse(BaseModel):
