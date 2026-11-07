@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, ChevronDown, Bell, User, Menu, X, Calculator } from 'lucide-react';
+import { Search, ChevronDown, User, Menu, X, Calculator, Navigation } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
+import HeaderBadges from './HeaderBadges';
 
 const PRIMARY = [
   { to: '/', label: 'Home', end: true },
@@ -95,25 +96,22 @@ export default function WebHeader() {
               Owner Portal
             </Link>
           )}
-          {/* Boma Yangu-style highlighted action in the nav bar */}
+          <Link
+            to="/request"
+            className="ml-1 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+          >
+            <Navigation className="h-4 w-4" aria-hidden /> Request a viewing
+          </Link>
           <Link
             to="/calculator"
-            className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 px-3.5 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            <Calculator className="h-4 w-4" aria-hidden /> Rent Calculator
+            <Calculator className="h-4 w-4" aria-hidden /> Calculator
           </Link>
         </nav>
 
         <div className="ml-auto hidden shrink-0 items-center gap-2 xl:flex">
-          {isAuthenticated && user && (
-            <Link
-              to="/notifications"
-              aria-label="Notifications"
-              className="rounded-md p-2 text-slate-500 hover:bg-slate-50"
-            >
-              <Bell className="h-[18px] w-[18px]" aria-hidden />
-            </Link>
-          )}
+          {isAuthenticated && user && <HeaderBadges />}
           {isAuthenticated && user ? (
             <>
               <Link to="/profile" className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800">

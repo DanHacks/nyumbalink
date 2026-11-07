@@ -90,4 +90,35 @@ curl -fsS https://heylaos.com/health            # {"status":"healthy"}
 curl -fsS https://heylaos.com/api/v1/maps/config
 ```
 
-Then load `https://heylaos.com/` and `https://heylaos.com/explore?view=map`.
+Then load `https://heylaos.com/` and `https://heylaos.com/explore?view=map`, and
+the instant-request flow at `https://heylaos.com/request`.
+
+## Real-time viewing requests
+
+Instant requests are pushed over WebSockets (`/api/v1/chat/ws`, API is mounted at
+`/api` by nginx) and fanned out across the 4 gunicorn workers through
+**Redis pub/sub** (`REDIS_URL`). Requirements:
+
+- `redis` must be healthy (it is in `docker-compose.prod.yml`); if Redis is
+  unreachable the API still works, the UI just falls back to its 60 s polling.
+- nginx must forward `Upgrade`/`Connection` headers on that path
+  (`deploy/nginx/nyumba.conf`); HTTP/2 through the Cloudflare Tunnel carries the
+  WebSocket upgrade transparently.
+
+## Seed the map with demo listings
+
+Production had zero VERIFIED listings, so the map and the request tiers were
+empty. `backend/scripts/seed_demo.py` creates real listings in real Kenyan
+estates owned by clearly-labelled seed accounts
+(`seed-owner-*@seed.nyumbalink.local`, non-deliverable mailboxes):
+
+```bash
+cd /opt/nyumbalink
+docker compose -f docker-compose.prod.yml exec api python -m scripts.seed_demo
+# re-create from scratch (removes seed listings, rooms, photos and their bookings):
+docker compose -f docker-compose.prod.yml exec api python -m scripts.seed_demo --fresh
+```
+
+Every seeded row has `property_code = NL-SEED-###` and
+`metadata.demo_seed = true`, so demo supply is always distinguishable from real
+owners' listings and can be removed with `--fresh`.
