@@ -64,6 +64,20 @@ async def list_notifications(
     }
 
 
+@router.get("/unread-count")
+async def unread_count(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    unread = (await db.execute(
+        select(func.count(Notification.id)).where(
+            Notification.user_id == current_user.id,
+            Notification.is_read == False,
+        )
+    )).scalar() or 0
+    return {"unread_count": unread}
+
+
 @router.post("/{notification_id}/read")
 async def mark_read(
     notification_id: str,

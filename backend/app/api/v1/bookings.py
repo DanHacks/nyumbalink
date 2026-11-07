@@ -10,11 +10,15 @@ from app.models.property import Room, OccupancyStatus, Property
 from app.models.booking import Booking, BookingStatus, BookingCheckIn, QRCode
 from app.schemas.booking import (
     BookingCreate, BookingResponse, BookingStatusUpdate,
-    CheckInRequest,
+    CheckInRequest, BookingRespondRequest,
 )
 from app.services.safety_service import (
     blacklist_exclusion, get_blacklist_entry, record_audit,
 )
+from app.services.notification_service import notify
+from app.services import realtime
+from app.services.media_service import build_media_url
+from app.models.media import VerificationPhoto, VerificationStatus
 from datetime import datetime, timezone, timedelta
 from math import radians, sin, cos, asin, sqrt
 import uuid
@@ -22,6 +26,7 @@ import uuid
 router = APIRouter()
 
 CHECK_IN_PROXIMITY_M = 150.0
+REQUEST_TTL = timedelta(minutes=15)
 
 
 def _parse_dt(value: str, field_name: str) -> datetime:
@@ -67,7 +72,132 @@ def _serialize(booking: Booking) -> dict:
         ),
         "tenant_notes": booking.tenant_notes,
         "owner_notes": booking.owner_notes,
+        **_request_fields(booking),
     }
+
+
+def _request_fields(booking: Booking) -> dict:
+    """Project the instant-request lifecycle out of the booking_metadata JSON."""
+    meta = booking.booking_metadata or {}
+    req = meta.get("request") or {}
+    proposal = meta.get("proposal") or {}
+    return {
+        "expires_at": req.get("expires_at"),
+        "requested_at": req.get("requested_at"),
+        "responded_at": req.get("responded_at"),
+        "decline_reason": req.get("decline_reason"),
+        "proposed_time_start": proposal.get("start"),
+        "proposed_time_end": proposal.get("end"),
+    }
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _confirm_booking(db: AsyncSession, booking: Booking, generated_by: str) -> None:
+    """Move a booking to CONFIRMED and issue the door QR code."""
+    booking.status = BookingStatus.CONFIRMED
+    qr_data = str(uuid.uuid4())
+    qr_code_url = f"nyumbalink://verify-booking/{booking.id}/{qr_data}"
+    db.add(QRCode(
+        booking_id=booking.id,
+        code=qr_data,
+        code_url=qr_code_url,
+        expires_at=_now() + timedelta(days=1),
+        generated_by=generated_by,
+    ))
+    booking.qr_code = qr_code_url
+
+
+def _event(booking: Booking, event_type: str, extra: dict | None = None) -> dict:
+    """Payload pushed to the tenant's live request sheet."""
+    prop = booking.property
+    payload = {
+        "type": event_type,
+        "booking_id": booking.id,
+        "status": _serialize(booking)["status"],
+        "property_name": prop.property_name if prop else None,
+        "scheduled_time_start": booking.scheduled_time_start,
+        "scheduled_time_end": booking.scheduled_time_end,
+        "responded_at": (_request_fields(booking).get("responded_at")),
+        "decline_reason": (_request_fields(booking).get("decline_reason")),
+        "proposed_time_start": (_request_fields(booking).get("proposed_time_start")),
+        "proposed_time_end": (_request_fields(booking).get("proposed_time_end")),
+        "qr_code": booking.qr_code,
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
+def _owner_ids(booking: Booking) -> list[str]:
+    return [uid for uid in (booking.owner_id, booking.caretaker_id) if uid]
+
+
+async def _property_card(db: AsyncSession, booking: Booking) -> dict:
+    """Compact property summary for the owner's incoming-request card."""
+    prop = booking.property
+    photo = None
+    if prop:
+        res = await db.execute(
+            select(VerificationPhoto.storage_url).where(
+                VerificationPhoto.property_id == prop.id,
+                VerificationPhoto.verification_status == VerificationStatus.APPROVED,
+                VerificationPhoto.is_replacement == False,
+            ).limit(1)
+        )
+        photo = res.scalar_one_or_none()
+    room = booking.room
+    return {
+        "booking_id": booking.id,
+        "property_id": booking.property_id,
+        "property_name": prop.property_name if prop else None,
+        "city": prop.city if prop else None,
+        "county": prop.county if prop else None,
+        "photo_url": build_media_url(photo, None) if photo else None,
+        "rent_amount": room.rent_amount if room else (prop.min_rent if prop else None),
+        "house_type": (
+            room.house_type.value if room and hasattr(room.house_type, "value")
+            else (room.house_type if room else None)
+        ),
+        "room_number": room.room_number if room else None,
+        "tenant_name": booking.tenant.full_name if booking.tenant else None,
+        "scheduled_time_start": booking.scheduled_time_start,
+        "scheduled_time_end": booking.scheduled_time_end,
+        "tenant_notes": booking.tenant_notes,
+        "expires_at": (_request_fields(booking).get("expires_at")),
+        "status": _serialize(booking)["status"],
+    }
+
+
+async def _load_booking(db: AsyncSession, booking_id: str) -> Booking:
+    result = await db.execute(
+        select(Booking).where(Booking.id == booking_id).options(
+            selectinload(Booking.property), selectinload(Booking.room), selectinload(Booking.tenant),
+        )
+    )
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+    return booking
+
+
+def _is_pending(booking: Booking) -> bool:
+    return booking.status == BookingStatus.PENDING
+
+
+def _is_expired(booking: Booking) -> bool:
+    expires_at = _request_fields(booking).get("expires_at")
+    return bool(expires_at) and _parse_dt(expires_at, "expires_at") < _now()
+
+
+def _update_request(booking: Booking, **changes) -> None:
+    meta = dict(booking.booking_metadata or {})
+    req = dict(meta.get("request") or {})
+    req.update(changes)
+    meta["request"] = req
+    booking.booking_metadata = meta
 
 
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
@@ -164,6 +294,11 @@ async def create_booking(
         scheduled_time_start=time_start,
         scheduled_time_end=time_end,
         tenant_notes=request.tenant_notes,
+        booking_metadata={"request": {
+            "requested_at": _now(),
+            "expires_at": _now() + REQUEST_TTL,
+            "responded_at": None,
+        }},
     )
     db.add(booking)
     await db.flush()
@@ -180,6 +315,12 @@ async def create_booking(
         )
     )
     booking = result.scalar_one()
+
+    # Tell the owner right now, on whichever worker holds their socket.
+    await realtime.publish(
+        _owner_ids(booking),
+        {"type": "booking_request", **(await _property_card(db, booking))},
+    )
     try:
         from app.tasks.notifications import send_booking_confirmation
         send_booking_confirmation.delay(booking.id)
@@ -273,15 +414,9 @@ async def update_booking_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Booking).where(Booking.id == booking_id)
-    )
-    booking = result.scalar_one_or_none()
+    booking = await _load_booking(db, booking_id)
 
-    if not booking:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
-
-    if booking.owner_id != current_user.id:
+    if booking.owner_id != current_user.id and booking.caretaker_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the owner can update booking status",
@@ -295,23 +430,12 @@ async def update_booking_status(
             detail=f"Invalid booking status: {request.status}",
         )
 
-    booking.status = new_status
+    if new_status == BookingStatus.CONFIRMED:
+        _confirm_booking(db, booking, current_user.id)
+    else:
+        booking.status = new_status
     if request.notes:
         booking.owner_notes = request.notes
-
-    if new_status == BookingStatus.CONFIRMED:
-        qr_data = str(uuid.uuid4())
-        qr_code_url = f"nyumbalink://verify-booking/{booking.id}/{qr_data}"
-
-        qr = QRCode(
-            booking_id=booking.id,
-            code=qr_data,
-            code_url=qr_code_url,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=1),
-            generated_by=current_user.id,
-        )
-        db.add(qr)
-        booking.qr_code = qr_code_url
 
     await record_audit(
         db, current_user.id, "booking_status_changed",
@@ -320,7 +444,233 @@ async def update_booking_status(
     )
     await db.flush()
 
+    await realtime.publish(
+        [booking.tenant_id],
+        _event(booking, "booking_status", {"owner_notes": booking.owner_notes}),
+    )
     return {"message": f"Booking {request.status}", "status": request.status}
+
+
+@router.post("/{booking_id}/respond")
+async def respond_to_request(
+    booking_id: str,
+    request: BookingRespondRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Owner/caretaker answers an instant viewing request: accept, decline or propose."""
+    booking = await _load_booking(db, booking_id)
+
+    if current_user.id not in _owner_ids(booking):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the owner or caretaker can respond to a request",
+        )
+    if not _is_pending(booking):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This request has already been answered",
+        )
+    if _is_expired(booking):
+        booking.status = BookingStatus.CANCELLED
+        _update_request(booking, responded_at=_now(), decline_reason="Request expired")
+        await db.flush()
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="This request has expired",
+        )
+
+    action = (request.action or "").strip().lower()
+    tenant_payload: dict
+
+    if action == "accept":
+        _confirm_booking(db, booking, current_user.id)
+        _update_request(booking, responded_at=_now(), decline_reason=None)
+        tenant_payload = _event(booking, "booking_accepted")
+        await notify(
+            db, booking.tenant_id,
+            notification_type="booking_accepted",
+            title=f"Viewing confirmed: {booking.property.property_name if booking.property else 'property'}",
+            body="The owner accepted your viewing request. Your check-in QR code is ready.",
+            reference_id=booking.id,
+            reference_type="booking",
+        )
+
+    elif action == "decline":
+        reason = (request.reason or "").strip() or "Owner declined this request"
+        booking.status = BookingStatus.CANCELLED
+        booking.cancellation_reason = reason
+        booking.cancelled_by = current_user.id
+        _update_request(booking, responded_at=_now(), decline_reason=reason)
+        tenant_payload = _event(booking, "booking_declined")
+        await notify(
+            db, booking.tenant_id,
+            notification_type="booking_declined",
+            title="Viewing request declined",
+            body=reason,
+            reference_id=booking.id,
+            reference_type="booking",
+        )
+
+    elif action == "propose":
+        if not request.proposed_time_start or not request.proposed_time_end:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="proposed_time_start and proposed_time_end are required",
+            )
+        start = _parse_dt(request.proposed_time_start, "proposed_time_start")
+        end = _parse_dt(request.proposed_time_end, "proposed_time_end")
+        if end <= start:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="proposed_time_end must be after proposed_time_start",
+            )
+        meta = dict(booking.booking_metadata or {})
+        meta["proposal"] = {
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "reason": (request.reason or "").strip() or None,
+            "proposed_at": _now().isoformat(),
+        }
+        booking.booking_metadata = meta
+        booking.status = BookingStatus.RESCHEDULED
+        _update_request(booking, responded_at=_now(), expires_at=_now() + REQUEST_TTL)
+        tenant_payload = _event(booking, "booking_proposed")
+        await notify(
+            db, booking.tenant_id,
+            notification_type="booking_proposed",
+            title="New time suggested",
+            body="The owner suggested a different viewing time. Accept or decline it to keep things moving.",
+            reference_id=booking.id,
+            reference_type="booking",
+        )
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="action must be one of: accept, decline, propose",
+        )
+
+    await record_audit(
+        db, current_user.id, f"booking_{action}",
+        resource_type="booking", resource_id=booking.id,
+        details={"action": action},
+    )
+    await db.flush()
+
+    await realtime.publish([booking.tenant_id], tenant_payload)
+    return _serialize(booking)
+
+
+@router.post("/{booking_id}/accept-proposal")
+async def accept_proposal(
+    booking_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    booking = await _load_booking(db, booking_id)
+
+    if booking.tenant_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the tenant can accept a proposed time",
+        )
+    if booking.status != BookingStatus.RESCHEDULED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="There is no pending proposal for this booking",
+        )
+
+    meta = dict(booking.booking_metadata or {})
+    proposal = meta.get("proposal") or {}
+    start = _parse_dt(proposal.get("start"), "proposal.start")
+    end = _parse_dt(proposal.get("end"), "proposal.end")
+
+    overlap = await db.execute(
+        select(Booking.id).where(
+            Booking.id != booking.id,
+            Booking.property_id == booking.property_id,
+            Booking.room_id == booking.room_id,
+            Booking.status.in_([
+                BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN,
+            ]),
+            and_(Booking.scheduled_time_start < end, Booking.scheduled_time_end > start),
+        ).limit(1)
+    )
+    if overlap.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That time was just taken. Ask the owner for another slot.",
+        )
+
+    booking.scheduled_date = start
+    booking.scheduled_time_start = start
+    booking.scheduled_time_end = end
+    meta.pop("proposal", None)
+    booking.booking_metadata = meta
+    _confirm_booking(db, booking, booking.owner_id)
+    _update_request(booking, responded_at=_now())
+
+    await record_audit(
+        db, current_user.id, "booking_proposal_accepted",
+        resource_type="booking", resource_id=booking.id,
+    )
+    await db.flush()
+
+    await realtime.publish(
+        _owner_ids(booking),
+        _event(booking, "proposal_accepted", {"tenant_name": booking.tenant.full_name if booking.tenant else None}),
+    )
+    await notify(
+        db, booking.owner_id,
+        notification_type="booking_confirmed",
+        title="Tenant accepted your new time",
+        body=f"{booking.tenant.full_name if booking.tenant else 'The tenant'} confirmed the viewing.",
+        reference_id=booking.id,
+        reference_type="booking",
+    )
+    return _serialize(booking)
+
+
+@router.post("/{booking_id}/decline-proposal")
+async def decline_proposal(
+    booking_id: str,
+    reason: str = "",
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    booking = await _load_booking(db, booking_id)
+
+    if booking.tenant_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the tenant can decline a proposed time",
+        )
+    if booking.status != BookingStatus.RESCHEDULED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="There is no pending proposal for this booking",
+        )
+
+    meta = dict(booking.booking_metadata or {})
+    meta.pop("proposal", None)
+    booking.booking_metadata = meta
+    booking.status = BookingStatus.CANCELLED
+    booking.cancellation_reason = reason or "Tenant declined the proposed time"
+    booking.cancelled_by = current_user.id
+    _update_request(booking, responded_at=_now(), decline_reason=booking.cancellation_reason)
+
+    await record_audit(
+        db, current_user.id, "booking_proposal_declined",
+        resource_type="booking", resource_id=booking.id,
+    )
+    await db.flush()
+
+    await realtime.publish(
+        _owner_ids(booking),
+        _event(booking, "proposal_declined", {"reason": booking.cancellation_reason}),
+    )
+    return _serialize(booking)
 
 
 @router.post("/{booking_id}/check-in")
