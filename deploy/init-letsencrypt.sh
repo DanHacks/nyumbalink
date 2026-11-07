@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Bootstrap Let's Encrypt for nyumba.hytechsolution.co.ke.
+# Bootstrap Let's Encrypt for heylaos.com (only needed for the direct-EC2 setup;
+# the Cloudflare Tunnel terminates TLS for heylaos.com and does not use this).
 # Run ONCE on the EC2 host from the repo root, after DNS points to the server:
 #   sudo ./deploy/init-letsencrypt.sh your@email.com
 set -euo pipefail
 
-DOMAIN="nyumba.hytechsolution.co.ke"
+DOMAIN="heylaos.com"
 EMAIL="${1:?Usage: $0 <email>}"
 RSA_KEY_SIZE=4096
 CERTBOT_CONF="./deploy/certbot/conf"

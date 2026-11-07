@@ -1,9 +1,24 @@
-name: Deploy to AWS EC2
+name: Deploy to EC2 (manual SSH fallback)
+
+# Production (https://heylaos.com) is deployed by a server-side git poll that
+# lives ON the host: it pulls origin/main, rebuilds the stack and restarts it
+# inside the same network as the Cloudflare Tunnel, then checks /health.
+#
+# This workflow is the emergency fallback only. It is NOT triggered by pushes,
+# so it can never race the poll or rebuild the stack into a state that bypasses
+# the tunnel. Run it from the Actions tab with "Run workflow".
+#
+# Before enabling it, set EC2_HOST / EC2_USER / EC2_SSH_KEY repository secrets
+# and confirm the host's port 22 is reachable from GitHub-hosted runners
+# (Lightsail static IPs are firewalled by default). See deploy/DEPLOY.md.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "deploy" to confirm a manual production deploy
+        required: true
+        type: string
 
 concurrency:
   group: deploy-production
@@ -11,6 +26,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: inputs.confirm == 'deploy'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -28,4 +44,4 @@ jobs:
             docker compose -f docker-compose.prod.yml build --pull api frontend celery_worker
             docker compose -f docker-compose.prod.yml up -d
             docker image prune -f
-            curl -fsS http://localhost/health > /dev/null && echo "Health check OK"
+            curl -fsS https://heylaos.com/health > /dev/null && echo "Health check OK"

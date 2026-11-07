@@ -16,8 +16,7 @@ export default defineConfig({
       'localhost',
       '127.0.0.1',
       '192.168.150.171',
-      'nyumba.hytechsolution.co.ke',
-      '.hytechsolution.co.ke',
+      'heylaos.com',
     ],
     proxy: {
       '/api': {

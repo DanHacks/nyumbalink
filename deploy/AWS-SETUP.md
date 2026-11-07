@@ -1,4 +1,8 @@
-# AWS deployment — nyumba.hytechsolution.co.ke
+# AWS deployment — heylaos.com
+
+> **Current production uses a Cloudflare Tunnel and poll-based deploys — see
+> [`DEPLOY.md`](DEPLOY.md).** This page describes the older direct-EC2 setup
+> (public 80/443 + Let's Encrypt) for reference or a fresh host without a tunnel.
 
 One EC2 instance runs the whole stack (Postgres+PostGIS, Redis, FastAPI, Celery,
 nginx TLS termination, React SPA) via `docker-compose.prod.yml`.
@@ -21,8 +25,8 @@ nginx TLS termination, React SPA) via `docker-compose.prod.yml`.
 
 ## 2. DNS (Route 53 or your registrar)
 
-Create an **A record**: `nyumba.hytechsolution.co.ke` → the EC2 public IP.
-Wait for `dig nyumba.hytechsolution.co.ke` to resolve before continuing.
+Create an **A record**: `heylaos.com` → the EC2 public IP.
+Wait for `dig heylaos.com` to resolve before continuing.
 
 ## 3. First deploy
 
@@ -45,14 +49,15 @@ docker compose -f docker-compose.prod.yml up -d --build
 sudo chmod +x deploy/init-letsencrypt.sh && ./deploy/init-letsencrypt.sh you@hytechsolution.co.ke
 ```
 
-Site is now live at **https://nyumba.hytechsolution.co.ke** with auto-renewing
+Site is now live at **https://heylaos.com** with auto-renewing
 Let's Encrypt certificates (the certbot sidecar renews every 12 h; nginx reloads
 on renewal).
 
 ## 4. Continuous deployment
 
-GitHub Actions (`.github/workflows/deploy.yml`) deploys `main` automatically.
-Add these repository secrets:
+The repo now deploys `main` via a server-side git poll; the GitHub Actions
+workflow (`.github/workflows/deploy.yml`) is a **manual-only** SSH fallback.
+If you choose to use it, add these repository secrets:
 
 | Secret | Value |
 |---|---|
@@ -66,7 +71,7 @@ rebuilds and restarts only changed services, then hits `/health`.
 ## 5. Mobile app points here too
 
 `mobile/eas.json` production profile already sets
-`EXPO_PUBLIC_API_URL=https://nyumba.hytechsolution.co.ke/api/v1`, so Android
+`EXPO_PUBLIC_API_URL=https://heylaos.com/api/v1`, so Android
 builds consume the same backend.
 
 ## 6. Backups (recommended)

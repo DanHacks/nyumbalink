@@ -352,7 +352,12 @@ npm run typecheck     # tsc --noEmit
 
 ## Deployment
 
-### Production (AWS EC2 + Docker + Let's Encrypt)
+### Production — https://heylaos.com
+
+Live on AWS behind a Cloudflare Tunnel; deploys are push-to-deploy via a
+server-side git poll. Runbook: [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
+
+### Direct EC2 + Docker + Let's Encrypt (legacy, no tunnel)
 
 Full guide: [`deploy/AWS-SETUP.md`](deploy/AWS-SETUP.md). Short version:
 
@@ -404,11 +409,14 @@ bash scripts/build_cpanel_zip.sh          # → $HOME/nyumbalink-cpanel.zip
 
 ## CI/CD
 
-One workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) — **Deploy to AWS EC2**.
+Production deploys are **not** run by GitHub Actions. A poll service on the
+server watches `origin/main`, pulls and rebuilds inside the Cloudflare Tunnel
+network — see [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
-- **Trigger:** push to `main` (or manual `workflow_dispatch`), concurrency group `deploy-production`.
-- **Action:** SSH into the host (`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY` secrets), `git reset --hard origin/main`, rebuild `api`/`frontend`/`celery_worker`, `docker compose up -d`, prune images, then `curl http://localhost/health`.
-- There is currently **no test/lint/build CI job**.
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) is a
+**manual-only SSH fallback** (`workflow_dispatch`, requires typing `deploy`).
+It does not run on push, so it can never race the poll or bypass the tunnel.
+There is currently **no test/lint/build CI job**.
 
 ---
 

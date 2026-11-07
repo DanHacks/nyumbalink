@@ -1,4 +1,4 @@
-# NyumbaLink production stack — nyumba.hytechsolution.co.ke
+# NyumbaLink production stack — https://heylaos.com (behind Cloudflare Tunnel)
 # Usage on the EC2 host:
 #   docker compose -f docker-compose.prod.yml up -d --build
 
@@ -43,7 +43,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "false"
-      CORS_ORIGINS: '["https://nyumba.hytechsolution.co.ke"]'
+      CORS_ORIGINS: '["https://heylaos.com"]'
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-319632867370-2pdu6p82056qpo7tho0snf9v3k2globi.apps.googleusercontent.com}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-AIzaSyAwo2vQn-Z33eKJSFTZ3Pxt-SFz96RkzZc}
     depends_on:

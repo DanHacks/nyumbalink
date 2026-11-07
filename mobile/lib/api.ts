@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
-  'https://nyumba.hytechsolution.co.ke';
+  'https://heylaos.com';
 
 export const API_BASE = `${API_URL}/api/v1`;
 export const MEDIA_BASE = API_URL;
